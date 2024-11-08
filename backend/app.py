@@ -119,5 +119,9 @@ async def get_hint(request: SubmissionRequest):
     response = await hint_generator.respond_to(prompt)
     return JSONResponse(content={"hint": response})
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "env": os.environ.get('RAILWAY_ENVIRONMENT', 'local')}
+
 if __name__ == '__main__':
     uvicorn.run(app, host="localhost", port=8000)
