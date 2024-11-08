@@ -12,7 +12,7 @@ const ExpandableBadgeCriteria = ({ text }) => {
     >
       <div 
         className={`
-          text-sm font-bold text-emerald-600 text-center
+          text-sm font-bold text-emerald-500 text-center
           transition-all duration-300 ease-in-out
           ${isExpanded ? 'opacity-0' : 'opacity-100'}
         `}
@@ -283,14 +283,14 @@ const WritingApp = () => {
       {showInstructions && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-8 rounded-lg max-w-md w-full mx-4 relative">
-            <h2 className="text-2xl font-bold text-black mb-6 text-center">how to <span className="text-emerald-600">play</span></h2>
+            <h2 className="text-2xl font-bold text-black mb-6 text-center">how to <span className="text-emerald-500">play</span></h2>
             
             <div className="space-y-4 mb-8 text-center">
-              <p>try to figure out what the <span className="text-emerald-600 font-bold">mystery badges</span> mean and earn them all!</p>
+              <p>try to figure out what the <span className="text-emerald-500 font-bold">mystery badges</span> mean and earn them all!</p>
               <p>1. Write something that you think will earn a badge <span className="font-bold">based on the information you have</span>.</p>
-              <p>2. <span className="font-bold">Submit as many times as you want</span> to try earning <span className="text-emerald-600 font-bold">mystery badges</span> and <span className="text-emerald-600 font-bold">discovering their criteria</span>.</p>
+              <p>2. <span className="font-bold">Submit as many times as you want</span> to try earning <span className="text-emerald-500 font-bold">mystery badges</span> and <span className="text-emerald-500 font-bold">discovering their criteria</span>.</p>
               <p>3. Earning badges gets you <span className="font-bold">help!</span></p>
-              <h2 className="text-2xl"><span className="">Complete the challenge by writing something that earns<span className="text-emerald-600 font-bold"> all three badges at once!</span></span></h2>
+              <h2 className="text-2xl"><span className="">Complete the challenge by writing something that earns<span className="text-emerald-500 font-bold"> all three badges at once!</span></span></h2>
             </div>
 
             {isLoading ? (
@@ -301,7 +301,7 @@ const WritingApp = () => {
             ) : (
               <button
                 onClick={() => setShowInstructions(false)}
-                className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-gray-800"
+                className="w-full px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-gray-800"
               >
                 Got it!
               </button>
@@ -325,7 +325,7 @@ const WritingApp = () => {
               {writingType.prompt.split(' ').map((word, index) => (
                 <span key={index} className={
                   index === writingType.prompt.split(' ').length - 1
-                  ? "text-emerald-600" 
+                  ? "text-emerald-500" 
                   : "text-black"
                 }>
                   {word}{' '}
@@ -368,7 +368,7 @@ const WritingApp = () => {
                       clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)'
                     }}
                   >
-                    <div className="w-20 h-20 rounded-full bg-emerald-600 opacity-75" />
+                    <div className="w-20 h-20 rounded-full bg-emerald-500 opacity-75" />
                   </div>
                   
                   {/* Hover text for half-earned badges */}
@@ -537,7 +537,7 @@ const WritingApp = () => {
               </button>
               <button
                 onClick={handlePlayAgain}
-                className="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-500 flex items-center justify-center gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
                 Play Again
