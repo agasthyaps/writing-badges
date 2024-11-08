@@ -1,3 +1,4 @@
+six
 fastapi
 langchain_anthropic
 langchain_community
