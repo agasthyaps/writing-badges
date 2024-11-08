@@ -8,6 +8,7 @@ from prompts import PROMPT_LIBRARY
 from llm_utils import Agent
 import uvicorn
 import json
+import os
 
 app = FastAPI()
 
