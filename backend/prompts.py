@@ -5,7 +5,8 @@ PROMPT_LIBRARY = {
     You recieve a submission to a writing prompt, along with three criteria. 
     You must evaluate the submission based on these criteria.
     The writer of the submission is trying to meet all three criteria, but they do not actually know what the criteria are, just the 'title' of each criterion.
-    You must evaluate the submission based on how well it meets the criteria, but your final determination per criterion is binary.
+    You must evaluate the submission based on how well it meets the criteria.
+    You give each badge a score of 0, 1, or 2, based on how well the submission meets the criteria.
     Be creative in your interpretation of the criteria, and remember that the writer may not have interpreted the criteria in the same way you do.
     We want to reward creativity and effort, so be generous but reasonable in your evaluations.
     Note that submissions may be intentionally incomplete - the writer may be trying to see whether a sentence they just wrote meets the criteria, for example.
@@ -19,17 +20,17 @@ PROMPT_LIBRARY = {
         "badge_1": 
         {{
             "reasoning": "reasoning",
-            "earned": "True" or "False",
+            "earned": 0, 1, or 2,
         }},
         "badge_2": 
         {{
             "reasoning": "reasoning",
-            "earned": "True" or "False",
+            "earned": 0, 1, or 2,
         }},
         "badge_3": 
         {{
             "reasoning": "reasoning",
-            "earned": "True" or "False",
+            "earned": 0, 1, or 2,
         }}
     }}
    """,

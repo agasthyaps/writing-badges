@@ -105,12 +105,9 @@ async def evaluate(request: SubmissionRequest):
     response = await evaluator.respond_to(prompt)
     response = json.loads(response)
     print(response)
-    earned_badges = [
-        request.badges[i]['id']
-        for i, (key, value) in enumerate(response.items())
-        if value['earned'] == "True"
-    ]
-    return JSONResponse(content={"earnedBadges": earned_badges})
+    
+    # Return the full response with scores
+    return JSONResponse(content=response)
 
 @app.post("/get-hint")
 async def get_hint(request: SubmissionRequest):

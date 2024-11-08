@@ -1,6 +1,46 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Award, ArrowRight, Loader2, RefreshCw, X } from 'lucide-react';
 
+const ExpandableBadgeCriteria = ({ text }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <div 
+      className="relative"
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+    >
+      <div 
+        className={`
+          text-sm font-bold text-emerald-600 text-center
+          transition-all duration-300 ease-in-out
+          ${isExpanded ? 'opacity-0' : 'opacity-100'}
+        `}
+      >
+        criteria discovered!
+      </div>
+      
+      <div 
+        className={`
+          absolute top-0 left-0 right-0
+          text-sm text-gray-600 text-center
+          bg-white px-2 py-1 rounded-md shadow-sm
+          transition-all duration-300 ease-in-out
+          z-50
+          ${isExpanded 
+            ? 'opacity-100 transform scale-100' 
+            : 'opacity-0 transform scale-95 pointer-events-none'
+          }
+        `}
+      >
+        {text}
+      </div>
+    </div>
+  );
+};
+
+let initializationPromise = null;
+
 const WritingApp = () => {
   const [writingType, setWritingType] = useState(null);
   const [submission, setSubmission] = useState('');
@@ -16,34 +56,60 @@ const WritingApp = () => {
   const [showNoBadgesToast, setShowNoBadgesToast] = useState(false);
   const [noBadgeAttempts, setNoBadgeAttempts] = useState(0);
   const [showClueToast, setShowClueToast] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [discoveredCriteria, setDiscoveredCriteria] = useState(new Set());
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-  const initializeApp = async () => {
-    try {
-      setIsLoading(true);
-      // First get the writing type
-      const typeResponse = await fetch(`${API_URL}/writing-type`);
-      const typeData = await typeResponse.json();
-      setWritingType(typeData.writingType);
-      
-      // Then get badges for this writing type
-      const badgesResponse = await fetch(`${API_URL}/generate-badges?writing_type_id=${typeData.writingType.id}`);
-      const badgesData = await badgesResponse.json();
-      setBadges(badgesData.badges.map(badge => ({
-        ...badge,
-        earned: false,
-        hasGrantedHint: false
-      })));
-    } catch (error) {
-      console.error('Failed to initialize app:', error);
-      // ... fallback handling ...
-    } finally {
-      setIsLoading(false);
-    }
+  // Helper function to get first sentence
+  const getFirstSentence = (text) => {
+    // Match for sentence endings: period, exclamation, or question mark followed by space or end of string
+    const match = text.match(/^[^.!?]+[.!?](?:\s|$)/);
+    return match ? match[0].trim() : text;
   };
 
   useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // If there's no existing initialization promise, create one
+        if (!initializationPromise) {
+          initializationPromise = (async () => {
+            // Get writing type
+            const typeResponse = await fetch(`${API_URL}/writing-type`);
+            const typeData = await typeResponse.json();
+            
+            // Get badges
+            const badgesResponse = await fetch(`${API_URL}/generate-badges?writing_type_id=${typeData.writingType.id}`);
+            const badgesData = await badgesResponse.json();
+            
+            return {
+              writingType: typeData.writingType,
+              badges: badgesData.badges.map(badge => ({
+                ...badge,
+                earned: false,
+                hasGrantedHint: false
+              }))
+            };
+          })();
+        }
+
+        // Both renders will use the same promise
+        const data = await initializationPromise;
+        setWritingType(data.writingType);
+        setBadges(data.badges);
+      } catch (error) {
+        console.error('Failed to initialize app:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     initializeApp();
+    
+    // Cleanup function to reset the promise when component unmounts
+    return () => {
+      initializationPromise = null;
+    };
   }, []);
 
   const handleBadgeEarned = (badgeId) => {
@@ -115,51 +181,36 @@ const WritingApp = () => {
   };
 
   const evaluateSubmission = async (text) => {
-    try {
-      const response = await fetch(`${API_URL}/evaluate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          submission: text,
-          writingType: writingType,
-          badges: badges.map(({ id, name, criteria }, index) => ({ 
-            id, 
-            name, 
-            criteria,
-            badge_number: index + 1
-          }))
-        })
-      });
+  try {
+    const response = await fetch(`${API_URL}/evaluate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        submission: text,
+        writingType: writingType,
+        badges: badges.map(({ id, name, criteria }, index) => ({ 
+          id, 
+          name, 
+          criteria,
+          badge_number: index + 1
+        }))
+      })
+    });
 
-      const data = await response.json();
-      const previouslyEarned = new Set(badges.filter(b => b.earned).map(b => b.id));
-      
-      const newlyEarnedBadges = badges.map(badge => {
-        const isEarned = data.earnedBadges.includes(badge.id);
-        const isNewlyEarned = isEarned && !previouslyEarned.has(badge.id);
-        
-        if (isNewlyEarned) {
-          handleBadgeEarned(badge.id);
-          if (!badge.hasGrantedHint && hints.length < 2) {
-            requestHint();
-          }
-        }
-
-        return {
-          ...badge,
-          earned: isEarned,
-          hasGrantedHint: badge.hasGrantedHint || (isNewlyEarned && hints.length < 2)
-        };
-      });
-
-      return newlyEarnedBadges;
-    } catch (error) {
-      console.error('Evaluation failed:', error);
-      alert('Failed to evaluate submission. Please try again.');
-      return badges;
-    }
+    const data = await response.json();
+    
+    // Map our existing badges to include the new scores
+    return badges.map((badge, index) => ({
+      ...badge,
+      earned: parseInt(data[`badge_${index + 1}`].earned)
+    }));
+  } catch (error) {
+    console.error('Evaluation failed:', error);
+    alert('Failed to evaluate submission. Please try again.');
+    return badges;
+  }
   };
 
   const handleSubmit = async () => {
@@ -172,18 +223,34 @@ const WritingApp = () => {
     setAttemptCount(prev => prev + 1);
     
     const evaluatedBadges = await evaluateSubmission(submission);
-    
-    // Check if any new badges were earned
-    const previouslyEarned = new Set(badges.map(b => b.earned ? b.id : null));
+
+    // Check for newly fully-earned badges (score of 2) for discovered criteria
+    const previouslyEarned = new Set(badges.map(b => b.earned === 2 ? b.id : null));
     const newlyEarned = evaluatedBadges.filter(badge => 
-      badge.earned && !previouslyEarned.has(badge.id)
+      badge.earned === 2 && !previouslyEarned.has(badge.id)
     );
+
+    // Animate all badges that were earned in this submission
+    evaluatedBadges.filter(badge => badge.earned === 2)
+    .forEach(badge => handleBadgeEarned(badge.id));
+    
+    if (newlyEarned.length > 0) {
+      setDiscoveredCriteria(prev => {
+        const newSet = new Set(prev);
+        newlyEarned.forEach(badge => newSet.add(badge.id));
+        return newSet;
+      });
+      if (hints.length < 2) {
+        requestHint();
+      }
+    }
     
     setBadges(evaluatedBadges);
     
-    if (evaluatedBadges.every(badge => badge.earned)) {
+    // Update winning condition to check for all badges being fully earned (2)
+    if (evaluatedBadges.every(badge => badge.earned === 2)) {
       setIsCelebrating(true);
-      setNoBadgeAttempts(0); // Reset counter on full completion
+      setNoBadgeAttempts(0);
     } else if (newlyEarned.length === 0) {
       // Increment counter when no new badges earned
       const newAttemptCount = noBadgeAttempts + 1;
@@ -211,25 +278,54 @@ const WritingApp = () => {
     setIsEvaluating(false);
   };
 
-  if (isLoading) {
-    return (
-      <div className="h-screen w-screen bg-white flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
   return (
     <div className="fixed inset-0 bg-white">
+      {showInstructions && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-8 rounded-lg max-w-md w-full mx-4 relative">
+            <h2 className="text-2xl font-bold text-black mb-6 text-center">how to <span className="text-emerald-600">play</span></h2>
+            
+            <div className="space-y-4 mb-8 text-center">
+              <p>try to figure out what the <span className="text-emerald-600 font-bold">mystery badges</span> mean and earn them all!</p>
+              <p>1. Write something that you think will earn a badge <span className="font-bold">based on the information you have</span>.</p>
+              <p>2. <span className="font-bold">Submit as many times as you want</span> to try earning <span className="text-emerald-600 font-bold">mystery badges</span> and <span className="text-emerald-600 font-bold">discovering their criteria</span>.</p>
+              <p>3. Earning badges gets you <span className="font-bold">help!</span></p>
+              <h2 className="text-2xl"><span className="">Complete the challenge by writing something that earns<span className="text-emerald-600 font-bold"> all three badges at once!</span></span></h2>
+            </div>
+
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-3 w-full px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                setting up the game...
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowInstructions(false)}
+                className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-gray-800"
+              >
+                Got it!
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Only show loader without instructions if instructions are dismissed */}
+      {isLoading && !showInstructions && (
+        <div className="h-screen w-screen bg-white flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        </div>
+      )}
+
       <div className="h-full max-w-3xl mx-auto px-4 py-16 flex flex-col">
         {/* Header */}
         <h1 className="text-8xl font-bold mb-16 text-black text-left">
-        {writingType ? (
+          {writingType ? (
             <>
               {writingType.prompt.split(' ').map((word, index) => (
                 <span key={index} className={
-                  index === writingType.prompt.split(' ').length - 1  // last word
-                  ? "text-emerald-400" 
+                  index === writingType.prompt.split(' ').length - 1
+                  ? "text-emerald-600" 
                   : "text-black"
                 }>
                   {word}{' '}
@@ -241,31 +337,71 @@ const WritingApp = () => {
           )}
         </h1>
   
-        {/* Badges */}
+        {/* Badges with Criteria */}
         <div className="flex gap-20 mb-12 ml-4">
-          {badges.map(badge => (
-            <div key={badge.id} className="flex flex-col items-center gap-3">
+        {badges.map(badge => (
+          <div key={badge.id} className="flex flex-col items-center gap-3">
+            <div className="relative">
+              {/* Base circle */}
               <div 
                 className={`
                   w-20 h-20 rounded-full border-2 flex items-center justify-center bg-white
-                  ${badge.earned ? 'border-yellow-400' : 'border-gray-300'}
-                  ${animatingBadges.has(badge.id) ? 'animate-[bounce_1s_ease-in-out]' : ''}
+                  ${badge.earned === 2 ? 'border-yellow-400' : 'border-gray-300'}
                   transition-colors duration-300
+                  ${animatingBadges.has(badge.id) ? 'animate-[bounce_1s_ease-in-out]' : ''}
                 `}
               >
-                {badge.earned ? (
-                  <span className="text-3xl">{badge.icon}</span>
+                {badge.earned === 2 ? (
+                  <span className="text-3xl relative z-10">{badge.icon}</span>
                 ) : (
-                  <span className="text-4xl text-gray-400">?</span>
+                  <span className="text-4xl text-gray-400 relative z-10">?</span>
                 )}
               </div>
-              <span className="text-base font-medium text-center text-black">{badge.name}</span>
+
+              {/* Half-earned overlay */}
+              {badge.earned === 1 && (
+                <>
+                  {/* Half circle overlay */}
+                  <div 
+                    className="absolute inset-0 overflow-hidden"
+                    style={{
+                      clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)'
+                    }}
+                  >
+                    <div className="w-20 h-20 rounded-full bg-emerald-600 opacity-75" />
+                  </div>
+                  
+                  {/* Hover text for half-earned badges */}
+                  <div className="absolute inset-0 group">
+                    <div className="
+                      invisible group-hover:visible
+                      absolute left-1/2 -translate-x-1/2 -bottom-16
+                      bg-black text-white text-sm rounded-lg py-2 px-3
+                      whitespace-nowrap
+                      opacity-0 group-hover:opacity-100
+                      transition-opacity duration-200
+                    ">
+                      Something about your last submission half-earned this badge... 🤔
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-          ))}
-        </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-base font-medium text-center text-black">
+                {badge.name}
+              </span>
+              {discoveredCriteria.has(badge.id) && (
+                <ExpandableBadgeCriteria text={badge.criteria} />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
   
         {/* Writing Area - Takes remaining space */}
-        <div className="flex-1 relative mb-12">
+        <div className="flex-1 mb-12">
           <textarea
             value={submission}
             onChange={(e) => setSubmission(e.target.value)}
@@ -275,20 +411,9 @@ const WritingApp = () => {
               caretColor: 'black'
             }}
           />
-          <button 
-            onClick={handleSubmit}
-            disabled={isEvaluating}
-            className="absolute bottom-6 right-4 h-15 w-15 rounded-full bg-white border-2 border-black flex items-center justify-center transition-opacity duration-200"
-          >
-            {isEvaluating ? (
-              <Loader2 className="h-8 w-8 animate-spin text-black" />
-            ) : (
-              <ArrowRight className="h-10 w-10 text-black stroke-[1.5]" />
-            )}
-          </button>
         </div>
   
-        {/* Hints */}
+        {/* Footer Area with Hints and Submit Button */}
         <div className="relative h-20">
           <div
             className={`
@@ -304,29 +429,45 @@ const WritingApp = () => {
             New hint unlocked! 🎉
           </div>
   
-          <div className="flex gap-4 justify-center">
-            {[...Array(2)].map((_, index) => (
-              <button
-                key={index}
-                onClick={() => useHint(index)}
-                className={`
-                  w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-300
-                  ${hints[index] 
-                    ? hints[index].isUsed
-                      ? 'bg-gray-200 cursor-not-allowed opacity-50'
-                      : 'bg-yellow-100 hover:bg-yellow-200 cursor-pointer'
-                    : 'bg-gray-200 opacity-30 cursor-not-allowed'
-                  }
-                `}
-                disabled={!hints[index] || hints[index].isUsed || isEvaluating}
-              >
-                {isEvaluating ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  '💡'
-                )}
-              </button>
-            ))}
+          <div className="flex items-center justify-between">
+            {/* Hints */}
+            <div className="flex gap-4">
+              {[...Array(2)].map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => useHint(index)}
+                  className={`
+                    w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-300
+                    ${hints[index] 
+                      ? hints[index].isUsed
+                        ? 'bg-gray-200 cursor-not-allowed opacity-50'
+                        : 'bg-yellow-100 hover:bg-yellow-200 cursor-pointer'
+                      : 'bg-gray-200 opacity-30 cursor-not-allowed'
+                    }
+                  `}
+                  disabled={!hints[index] || hints[index].isUsed || isEvaluating}
+                >
+                  {isEvaluating ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    '💡'
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Submit Button */}
+            <button 
+              onClick={handleSubmit}
+              disabled={isEvaluating}
+              className="absolute bottom-6 right-4 h-15 w-15 rounded-full bg-white border-2 border-black flex items-center justify-center transition-opacity duration-200"
+            >
+              {isEvaluating ? (
+                <Loader2 className="h-8 w-8 animate-spin text-black" />
+              ) : (
+                <ArrowRight className="h-10 w-10 text-black stroke-[1.5]" />
+              )}
+            </button>
           </div>
         </div>
       </div>
