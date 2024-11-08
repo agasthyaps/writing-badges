@@ -279,10 +279,10 @@ const WritingApp = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-white">
+    <div className="fixed inset-0 bg-white text-black [color-scheme:light]">
       {showInstructions && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-8 rounded-lg max-w-md w-full mx-4 relative">
+          <div className="bg-white text-black p-8 rounded-lg max-w-md w-full mx-4 relative">
             <h2 className="text-2xl font-bold text-black mb-6 text-center">how to <span className="text-emerald-500">play</span></h2>
             
             <div className="space-y-4 mb-8 text-center">
@@ -318,7 +318,7 @@ const WritingApp = () => {
       )}
 
       {/* Main Content */}
-      <div className="h-full max-w-3xl mx-auto px-3 sm:px-4 py-8 sm:py-16 flex flex-col">
+      <div className="h-full max-w-3xl mx-auto px-3 sm:px-4 py-8 sm:py-16 flex flex-col bg-white text-black">
         {/* Header - Responsive text size */}
         <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-8 sm:mb-16 text-black text-left leading-tight">
           {writingType ? (
