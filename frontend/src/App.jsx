@@ -286,7 +286,7 @@ const WritingApp = () => {
             <h2 className="text-2xl font-bold text-black mb-6 text-center">how to <span className="text-emerald-500">play</span></h2>
             
             <div className="space-y-4 mb-8 text-center">
-              <p>try to figure out what the <span className="text-emerald-500 font-bold">mystery badges</span> mean and earn them all!</p>
+              <p><span className="italic">try to figure out what the <span className="text-emerald-500 font-bold">mystery badges</span> mean to earn them all!</span></p>
               <p>1. Write something that you think will earn a badge <span className="font-bold">based on the information you have</span>.</p>
               <p>2. <span className="font-bold">Submit as many times as you want</span> to try earning <span className="text-emerald-500 font-bold">mystery badges</span> and <span className="text-emerald-500 font-bold">discovering their criteria</span>.</p>
               <p>3. Earning badges gets you <span className="font-bold">help!</span></p>
