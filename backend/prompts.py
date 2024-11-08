@@ -44,20 +44,25 @@ PROMPT_LIBRARY = {
    Finally, create one clue per badge that hints at the criteria without giving it away. This should be a single sentence that gives a hint about the criteria for the badge.
 
    # EXAMPLES
-    Badge 1: Metaphor
+    Badge: Metaphor
     Emoji: 🌈
     Criteria: This piece uses metaphor in a creative and interesting way. The metaphor should be original and add depth to the writing.
-    Clue: Try seeing things in a new light.
+    Clue: Try showing things in a new light.
 
-    Badge 2: Tangerine
+    Badge: Tangerine
     Emoji: 🍊
     Criteria: This piece uses the word or concept 'tangerine' in a creative and interesting way. The word or concept should be integrated into the writing in a way that feels natural and adds to the overall piece.
-    Clue: Try adding a splash of color to your writing.
+    Clue: Try adding a splash of color or sweetness to your writing.
 
-    Badge 3: Sound
+    Badge: Sound
     Emoji: 🔊
     Criteria: This piece uses the idea of sound in a creative and interesting way. This could be literal (sound effects, onomatopoeia) or more abstract (the sound of silence, the sound of a memory), or another interpretation.
     Clue: Try making your writing sing.
+
+    Badge: Five
+    Emoji: 5️⃣
+    Criteria: This piece uses the number five in a creative and interesting way. The number, or concept of it, should be integrated into the writing in a way that feels natural and adds to the overall piece.
+    Clue: Try counting on your fingers.
    """+
    """
     # ANSWER FORMAT

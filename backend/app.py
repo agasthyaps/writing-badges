@@ -120,4 +120,4 @@ async def get_hint(request: SubmissionRequest):
     return JSONResponse(content={"hint": response})
 
 if __name__ == '__main__':
-    uvicorn.run(app, host="localhost", port=8080)
+    uvicorn.run(app, host="localhost", port=8000)
