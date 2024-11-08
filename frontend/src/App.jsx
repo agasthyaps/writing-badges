@@ -317,9 +317,10 @@ const WritingApp = () => {
         </div>
       )}
 
-      <div className="h-full max-w-3xl mx-auto px-4 py-16 flex flex-col">
-        {/* Header */}
-        <h1 className="text-8xl font-bold mb-16 text-black text-left">
+      {/* Main Content */}
+      <div className="h-full max-w-3xl mx-auto px-3 sm:px-4 py-8 sm:py-16 flex flex-col">
+        {/* Header - Responsive text size */}
+        <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-8 sm:mb-16 text-black text-left leading-tight">
           {writingType ? (
             <>
               {writingType.prompt.split(' ').map((word, index) => (
@@ -337,75 +338,75 @@ const WritingApp = () => {
           )}
         </h1>
   
-        {/* Badges with Criteria */}
-        <div className="flex gap-20 mb-12 ml-4">
-        {badges.map(badge => (
-          <div key={badge.id} className="flex flex-col items-center gap-3">
-            <div className="relative">
-              {/* Base circle */}
-              <div 
-                className={`
-                  w-20 h-20 rounded-full border-2 flex items-center justify-center bg-white
-                  ${badge.earned === 2 ? 'border-yellow-400' : 'border-gray-300'}
-                  transition-colors duration-300
-                  ${animatingBadges.has(badge.id) ? 'animate-[bounce_1s_ease-in-out]' : ''}
-                `}
-              >
-                {badge.earned === 2 ? (
-                  <span className="text-3xl relative z-10">{badge.icon}</span>
-                ) : (
-                  <span className="text-4xl text-gray-400 relative z-10">?</span>
+        {/* Badges - Responsive spacing */}
+        <div className="flex justify-between sm:justify-start sm:gap-20 mb-8 sm:mb-12 px-2">
+          {badges.map(badge => (
+            <div key={badge.id} className="flex flex-col items-center gap-2 sm:gap-3">
+              <div className="relative">
+                {/* Base circle - Smaller on mobile */}
+                <div 
+                  className={`
+                    w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 flex items-center justify-center bg-white
+                    ${badge.earned === 2 ? 'border-yellow-400' : 'border-gray-300'}
+                    transition-colors duration-300
+                    ${animatingBadges.has(badge.id) ? 'animate-[bounce_1s_ease-in-out]' : ''}
+                  `}
+                >
+                  {badge.earned === 2 ? (
+                    <span className="text-2xl sm:text-3xl relative z-10">{badge.icon}</span>
+                  ) : (
+                    <span className="text-3xl sm:text-4xl text-gray-400 relative z-10">?</span>
+                  )}
+                </div>
+
+                {/* Half-earned overlay */}
+                {badge.earned === 1 && (
+                  <>
+                    <div 
+                      className="absolute inset-0 overflow-hidden"
+                      style={{
+                        clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)'
+                      }}
+                    >
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500 opacity-75" />
+                    </div>
+                    
+                    {/* Hover text - Adjusted positioning */}
+                    <div className="absolute inset-0 group">
+                      <div className="
+                        invisible group-hover:visible
+                        absolute left-1/2 -translate-x-1/2 -bottom-12 sm:-bottom-16
+                        bg-black text-white text-xs sm:text-sm rounded-lg py-1 sm:py-2 px-2 sm:px-3
+                        whitespace-nowrap
+                        opacity-0 group-hover:opacity-100
+                        transition-opacity duration-200
+                        max-w-[200px] sm:max-w-none text-center
+                      ">
+                        Something about your last submission half-earned this badge... 🤔
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
 
-              {/* Half-earned overlay */}
-              {badge.earned === 1 && (
-                <>
-                  {/* Half circle overlay */}
-                  <div 
-                    className="absolute inset-0 overflow-hidden"
-                    style={{
-                      clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)'
-                    }}
-                  >
-                    <div className="w-20 h-20 rounded-full bg-emerald-500 opacity-75" />
-                  </div>
-                  
-                  {/* Hover text for half-earned badges */}
-                  <div className="absolute inset-0 group">
-                    <div className="
-                      invisible group-hover:visible
-                      absolute left-1/2 -translate-x-1/2 -bottom-16
-                      bg-black text-white text-sm rounded-lg py-2 px-3
-                      whitespace-nowrap
-                      opacity-0 group-hover:opacity-100
-                      transition-opacity duration-200
-                    ">
-                      Something about your last submission half-earned this badge... 🤔
-                    </div>
-                  </div>
-                </>
-              )}
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm sm:text-base font-medium text-center text-black">
+                  {badge.name}
+                </span>
+                {discoveredCriteria.has(badge.id) && (
+                  <ExpandableBadgeCriteria text={badge.criteria} />
+                )}
+              </div>
             </div>
-
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-base font-medium text-center text-black">
-                {badge.name}
-              </span>
-              {discoveredCriteria.has(badge.id) && (
-                <ExpandableBadgeCriteria text={badge.criteria} />
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
   
-        {/* Writing Area - Takes remaining space */}
-        <div className="flex-1 mb-12">
+        {/* Writing Area */}
+        <div className="flex-1 mb-8 sm:mb-12">
           <textarea
             value={submission}
             onChange={(e) => setSubmission(e.target.value)}
-            className="w-full h-full text-2xl focus:outline-none resize-none bg-transparent relative text-black leading-normal"
+            className="w-full h-full text-xl sm:text-2xl focus:outline-none resize-none bg-transparent relative text-black leading-normal"
             placeholder="Start writing here..."
             style={{
               caretColor: 'black'
@@ -413,13 +414,14 @@ const WritingApp = () => {
           />
         </div>
   
-        {/* Footer Area with Hints and Submit Button */}
-        <div className="relative h-20">
+        {/* Footer Area - Adjusted for mobile */}
+        <div className="relative h-16 sm:h-20">
+          {/* Notification Toast */}
           <div
             className={`
               absolute -top-12 left-1/2 -translate-x-1/2
-              bg-black text-white px-4 py-2 rounded-lg
-              transition-all duration-300 ease-in-out
+              bg-black text-white px-3 sm:px-4 py-1 sm:py-2 rounded-lg
+              transition-all duration-300 ease-in-out text-sm sm:text-base
               ${showHintNotification 
                 ? 'opacity-100 transform translate-y-0' 
                 : 'opacity-0 transform translate-y-4 pointer-events-none'
@@ -430,14 +432,14 @@ const WritingApp = () => {
           </div>
   
           <div className="flex items-center justify-between">
-            {/* Hints */}
-            <div className="flex gap-4">
+            {/* Hints - Smaller on mobile */}
+            <div className="flex gap-2 sm:gap-4">
               {[...Array(2)].map((_, index) => (
                 <button
                   key={index}
                   onClick={() => useHint(index)}
                   className={`
-                    w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-300
+                    w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-all duration-300
                     ${hints[index] 
                       ? hints[index].isUsed
                         ? 'bg-gray-200 cursor-not-allowed opacity-50'
@@ -448,7 +450,7 @@ const WritingApp = () => {
                   disabled={!hints[index] || hints[index].isUsed || isEvaluating}
                 >
                   {isEvaluating ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
                   ) : (
                     '💡'
                   )}
@@ -456,88 +458,91 @@ const WritingApp = () => {
               ))}
             </div>
 
-            {/* Submit Button */}
+            {/* Submit Button - Smaller on mobile */}
             <button 
               onClick={handleSubmit}
               disabled={isEvaluating}
-              className="absolute bottom-6 right-4 h-15 w-15 rounded-full bg-white border-2 border-black flex items-center justify-center transition-opacity duration-200"
+              className="absolute bottom-4 sm:bottom-6 right-0 sm:right-4 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-white border-2 border-black flex items-center justify-center transition-opacity duration-200"
             >
               {isEvaluating ? (
                 <Loader2 className="h-8 w-8 animate-spin text-black" />
               ) : (
-                <ArrowRight className="h-10 w-10 text-black stroke-[1.5]" />
+                <ArrowRight className="h-8 w-8 sm:h-10 sm:w-10 text-black stroke-[1.5]" />
               )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Clue Toast */}
+      {/* Toast Messages - Adjusted for mobile */}
       <div
         className={`
-          fixed bottom-8 left-1/2 transform -translate-x-1/2
-          bg-black text-white px-6 py-3 rounded-full
+          fixed bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2
+          bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full
           transition-all duration-300 ease-in-out
-          flex items-center gap-2
+          flex items-center gap-2 max-w-[90%] sm:max-w-none
           ${showClueToast 
             ? 'opacity-100 translate-y-0' 
             : 'opacity-0 translate-y-4 pointer-events-none'
           }
         `}
       >
-        <span className="text-xl mr-2">💡</span>
-        <span className="text-base">
+        <span className="text-lg sm:text-xl mr-1 sm:mr-2">💡</span>
+        <span className="text-sm sm:text-base">
           Try this: {badges.find(b => !b.earned)?.clue}
         </span>
       </div>
 
-      {/* keep trying toast */}
+      {/* Keep trying toast */}
       <div
         className={`
-          fixed bottom-8 left-1/2 transform -translate-x-1/2
-          bg-black text-white px-6 py-3 rounded-full
+          fixed bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2
+          bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full
           transition-all duration-300 ease-in-out
-          flex items-center gap-2
-          ${showNoBadgesToast && !showClueToast  // Don't show if clue toast is visible
+          flex items-center gap-2 max-w-[90%] sm:max-w-none
+          ${showNoBadgesToast && !showClueToast
             ? 'opacity-100 translate-y-0' 
             : 'opacity-0 translate-y-4 pointer-events-none'
           }
         `}
       >
-        <span className="text-base">Keep going! Try adding more detail or creativity to earn badges.</span>
+        <span className="text-sm sm:text-base">
+          Keep going! Try adding more detail or creativity to earn badges.
+        </span>
       </div>
 
+      {/* Celebration Modal - Added mobile padding */}
       {isCelebrating && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-8 rounded-lg text-center max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-black mb-6">Congratulations!</h2>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white p-6 sm:p-8 rounded-lg text-center max-w-md w-full mx-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-black mb-4 sm:mb-6">Congratulations!</h2>
             
-            <div className="mb-6 space-y-4">
+            <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4">
               <div className="text-left space-y-2">
                 {badges.map(badge => (
                   <div key={badge.id} className="flex items-center gap-2">
-                    <span className="text-xl">{badge.icon}</span>
-                    <span className="text-black">
+                    <span className="text-lg sm:text-xl">{badge.icon}</span>
+                    <span className="text-sm sm:text-base text-black">
                       <span className="font-medium">{badge.name}:</span> {badge.criteria}
                     </span>
                   </div>
                 ))}
               </div>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm sm:text-base">
                 Completed in {attemptCount} {attemptCount === 1 ? 'attempt' : 'attempts'}
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => setIsCelebrating(false)}
-                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700"
+                className="flex-1 px-3 sm:px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700 text-sm sm:text-base"
               >
                 Keep Editing
               </button>
               <button
                 onClick={handlePlayAgain}
-                className="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-500 flex items-center justify-center gap-2"
+                className="flex-1 px-3 sm:px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-500 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
               >
                 <RefreshCw className="h-4 w-4" />
                 Play Again
