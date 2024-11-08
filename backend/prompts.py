@@ -8,6 +8,8 @@ PROMPT_LIBRARY = {
     You must evaluate the submission based on how well it meets the criteria, but your final determination per criterion is binary.
     Be creative in your interpretation of the criteria, and remember that the writer may not have interpreted the criteria in the same way you do.
     We want to reward creativity and effort, so be generous but reasonable in your evaluations.
+    Note that submissions may be intentionally incomplete - the writer may be trying to see whether a sentence they just wrote meets the criteria, for example.
+    So your evaluation should be based on the submission as it stands.
 
     """+
     """
