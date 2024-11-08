@@ -16,17 +16,18 @@ const WritingApp = () => {
   const [showNoBadgesToast, setShowNoBadgesToast] = useState(false);
   const [noBadgeAttempts, setNoBadgeAttempts] = useState(0);
   const [showClueToast, setShowClueToast] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const initializeApp = async () => {
     try {
       setIsLoading(true);
       // First get the writing type
-      const typeResponse = await fetch('http://localhost:8000/writing-type');
+      const typeResponse = await fetch(`${API_URL}/writing-type`);
       const typeData = await typeResponse.json();
       setWritingType(typeData.writingType);
       
       // Then get badges for this writing type
-      const badgesResponse = await fetch(`http://localhost:8000/generate-badges?writing_type_id=${typeData.writingType.id}`);
+      const badgesResponse = await fetch(`${API_URL}/generate-badges?writing_type_id=${typeData.writingType.id}`);
       const badgesData = await badgesResponse.json();
       setBadges(badgesData.badges.map(badge => ({
         ...badge,
@@ -82,7 +83,7 @@ const WritingApp = () => {
       const unearnedBadges = badges.filter(badge => !badge.earned);
       const randomBadge = unearnedBadges[Math.floor(Math.random() * unearnedBadges.length)];
       
-      const response = await fetch('http://localhost:8000/get-hint', {
+      const response = await fetch(`${API_URL}/get-hint`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +116,7 @@ const WritingApp = () => {
 
   const evaluateSubmission = async (text) => {
     try {
-      const response = await fetch('http://localhost:8000/evaluate', {
+      const response = await fetch(`${API_URL}/evaluate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
