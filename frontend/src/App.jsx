@@ -264,70 +264,73 @@ const WritingApp = () => {
     setIsEvaluating(true);
     setAttemptCount(prev => prev + 1);
     
-    const evaluatedBadges = await evaluateSubmission(submission);
+    try {
+      const evaluationResult = await evaluateSubmission(submission);
+      
+      // Check for newly earned badges to handle animation regardless of win condition
+      const previouslyEarned = new Set(badges.map(b => b.earned === 2 ? b.id : null));
+      const newlyEarned = evaluationResult.filter(badge => 
+        badge.earned === 2 && !previouslyEarned.has(badge.id)
+      );
 
-    // Check for newly earned badges to handle animation regardless of win condition
-    const previouslyEarned = new Set(badges.map(b => b.earned === 2 ? b.id : null));
-    const newlyEarned = evaluatedBadges.filter(badge => 
-      badge.earned === 2 && !previouslyEarned.has(badge.id)
-    );
+      // Animate all badges that were earned in this submission
+      evaluationResult.filter(badge => badge.earned === 2)
+        .forEach(badge => handleBadgeEarned(badge.id));
 
-    // Animate all badges that were earned in this submission
-    evaluatedBadges.filter(badge => badge.earned === 2)
-      .forEach(badge => handleBadgeEarned(badge.id));
+      // Set the updated badges state
+      setBadges(evaluationResult);
 
-    // Set the updated badges state
-    setBadges(evaluatedBadges);
+      // Check if all badges are fully earned (2)
+      const allBadgesEarned = evaluationResult.every(badge => badge.earned === 2);
 
-    // Check if all badges are fully earned (2)
-    const allBadgesEarned = evaluatedBadges.every(badge => badge.earned === 2);
-
-    if (allBadgesEarned) {
-      setIsCelebrating(true);
-      setNoBadgeAttempts(0);
-      setIsFeedbackVisible(false);
-      setIsRequestingHint(false);
-    } else {
-      // Show feedback if provided and we haven't won
-      const data = await evaluateSubmission(submission);
-      if (data.final_feedback) {
-        setFeedback(data.final_feedback);
-        setIsFeedbackVisible(true);
-      }
-
-      // Handle newly discovered criteria and hints
-      if (newlyEarned.length > 0) {
-        setDiscoveredCriteria(prev => {
-          const newSet = new Set(prev);
-          newlyEarned.forEach(badge => newSet.add(badge.id));
-          return newSet;
-        });
-        if (hints.length < 2) {
-          requestHint();
-        }
+      if (allBadgesEarned) {
+        setIsCelebrating(true);
+        setNoBadgeAttempts(0);
+        setIsFeedbackVisible(false);
+        setIsRequestingHint(false);
       } else {
-        // Handle no new badges earned
-        const newAttemptCount = noBadgeAttempts + 1;
-        setNoBadgeAttempts(newAttemptCount);
-        
-        if (newAttemptCount >= 3) {
-          // Show clue for random unearned badge
-          const unearnedBadges = evaluatedBadges.filter(badge => !badge.earned);
-          if (unearnedBadges.length > 0) {
-            const randomBadge = unearnedBadges[Math.floor(Math.random() * unearnedBadges.length)];
-            setShowClueToast(true);
-            setTimeout(() => setShowClueToast(false), 5000);
+        // Show feedback if provided and we haven't won
+        if (evaluationResult.final_feedback) {
+          setFeedback(evaluationResult.final_feedback);
+          setIsFeedbackVisible(true);
+        }
+
+        // Handle newly discovered criteria and hints
+        if (newlyEarned.length > 0) {
+          setDiscoveredCriteria(prev => {
+            const newSet = new Set(prev);
+            newlyEarned.forEach(badge => newSet.add(badge.id));
+            return newSet;
+          });
+          if (hints.length < 2) {
+            requestHint();
           }
-          setNoBadgeAttempts(0);
         } else {
-          setShowNoBadgesToast(true);
-          setTimeout(() => setShowNoBadgesToast(false), 3000);
+          // Handle no new badges earned
+          const newAttemptCount = noBadgeAttempts + 1;
+          setNoBadgeAttempts(newAttemptCount);
+          
+          if (newAttemptCount >= 3) {
+            // Show clue for random unearned badge
+            const unearnedBadges = evaluationResult.filter(badge => !badge.earned);
+            if (unearnedBadges.length > 0) {
+              const randomBadge = unearnedBadges[Math.floor(Math.random() * unearnedBadges.length)];
+              setShowClueToast(true);
+              setTimeout(() => setShowClueToast(false), 5000);
+            }
+            setNoBadgeAttempts(0);
+          } else {
+            setShowNoBadgesToast(true);
+            setTimeout(() => setShowNoBadgesToast(false), 3000);
+          }
         }
       }
+    } catch (error) {
+      console.error('Error during submission:', error);
+    } finally {
+      setIsEvaluating(false);
+      setIsRequestingHint(false);  // Reset hint loader
     }
-    
-    setIsEvaluating(false);
-    setIsRequestingHint(false);  // Reset hint loader
   };
 
   return (
