@@ -554,7 +554,7 @@ const WritingApp = () => {
                   transition-opacity duration-300
                   text-center
                 ">
-                  Having trouble getting started? Use an assist! ↓
+                  Having trouble getting started? Use an assist! ✏️
                 </div>
               )}
               
