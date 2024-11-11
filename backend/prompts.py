@@ -102,6 +102,7 @@ PROMPT_LIBRARY = {
    # OVERVIEW
    you are given a piece of writing and a vauge set of unmet criteria. add a line to the writing that might help the piece meet the criteria.
    only one line is needed, and it should be a single sentence or phrase that fits into the existing writing.
-   only output the new line, not the entire piece with the new line added.
+   only output the new line, not the entire piece with the new line added. do not include any preamble. consider this a collaborative writing exercise that requires you to fully integrate your line into the existing piece.
+   even if the piece of writing you recieve is blank, only generate a single line to add to the piece.
    """
 }

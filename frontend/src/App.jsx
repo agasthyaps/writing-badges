@@ -82,7 +82,7 @@ const WritingApp = () => {
   const [attemptCount, setAttemptCount] = useState(0);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [hints, setHints] = useState([]);
+  const [hints, setHints] = useState([{ text: '', isUsed: false }]); // Initialize with one hint
   const [isRequestingHint, setIsRequestingHint] = useState(false);
   const [animatingBadges, setAnimatingBadges] = useState(new Set());
   const [showHintNotification, setShowHintNotification] = useState(false);
@@ -93,29 +93,36 @@ const WritingApp = () => {
   const [discoveredCriteria, setDiscoveredCriteria] = useState(new Set());
   const [feedback, setFeedback] = useState('');
   const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
+  const [showAssistHint, setShowAssistHint] = useState(false);
+  const [clickedAssist, setClickedAssist] = useState(null);
+  const inactivityTimerRef = useRef(null);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-  // Helper function to get first sentence
-  const getFirstSentence = (text) => {
-    // Match for sentence endings: period, exclamation, or question mark followed by space or end of string
-    const match = text.match(/^[^.!?]+[.!?](?:\s|$)/);
-    return match ? match[0].trim() : text;
-  };
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // If there's no existing initialization promise, create one
         if (!initializationPromise) {
           initializationPromise = (async () => {
-            // Get writing type
             const typeResponse = await fetch(`${API_URL}/writing-type`);
             const typeData = await typeResponse.json();
             
-            // Get badges
             const badgesResponse = await fetch(`${API_URL}/generate-badges?writing_type_id=${typeData.writingType.id}`);
             const badgesData = await badgesResponse.json();
+            
+            // Get initial hint for the free assist
+            const hintResponse = await fetch(`${API_URL}/get-hint`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                submission: '',
+                writingType: typeData.writingType,
+                badges: badgesData.badges
+              })
+            });
+            const hintData = await hintResponse.json();
             
             return {
               writingType: typeData.writingType,
@@ -123,15 +130,21 @@ const WritingApp = () => {
                 ...badge,
                 earned: false,
                 hasGrantedHint: false
-              }))
+              })),
+              initialHint: hintData.hint
             };
           })();
         }
 
-        // Both renders will use the same promise
         const data = await initializationPromise;
         setWritingType(data.writingType);
         setBadges(data.badges);
+        // Initialize with one unused hint
+        setHints([{ 
+          text: data.initialHint, 
+          isUsed: false,
+          targetBadge: data.badges[Math.floor(Math.random() * data.badges.length)]
+        }]);
       } catch (error) {
         console.error('Failed to initialize app:', error);
       } finally {
@@ -141,11 +154,48 @@ const WritingApp = () => {
 
     initializeApp();
     
-    // Cleanup function to reset the promise when component unmounts
     return () => {
       initializationPromise = null;
     };
   }, []);
+
+  useEffect(() => {
+    const startInactivityTimer = () => {
+      // Clear any existing timer
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      
+      // Set new timer - show hint after 8 seconds of inactivity
+      inactivityTimerRef.current = setTimeout(() => {
+        // Only show hint if no text has been entered and first assist hasn't been used
+        if (!submission.trim() && hints[0] && !hints[0].isUsed) {
+          setShowAssistHint(true);
+        }
+      }, 8000);
+    };
+
+    // Start timer on mount
+    startInactivityTimer();
+
+    // Reset timer when user types or uses assist
+    const resetTimer = () => {
+      setShowAssistHint(false);
+      startInactivityTimer();
+    };
+
+    // Add event listeners for user activity
+    document.addEventListener('keypress', resetTimer);
+    document.addEventListener('mousedown', resetTimer);
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      document.removeEventListener('keypress', resetTimer);
+      document.removeEventListener('mousedown', resetTimer);
+    };
+  }, [submission, hints]);
 
   const handleBadgeEarned = (badgeId) => {
     setAnimatingBadges(prev => new Set([...prev, badgeId]));
@@ -159,18 +209,17 @@ const WritingApp = () => {
   };
 
   const requestHint = async () => {
-    if (hints.length >= 2 || isRequestingHint) return;
+    if (hints.length >= 3 || isRequestingHint) return; // Updated to allow max 3 hints (1 initial + 2 earned)
     
     setIsRequestingHint(true);
     try {
-      // Get an unearned badge at the time the hint is created
       const unearnedBadges = badges.filter(badge => !badge.earned);
       const randomBadge = unearnedBadges[Math.floor(Math.random() * unearnedBadges.length)];
       
       setHints(prev => [...prev, { 
         text: '', 
         isUsed: false,
-        targetBadge: randomBadge  // Store the badge this hint is for
+        targetBadge: randomBadge
       }]);
       setShowHintNotification(true);
       setTimeout(() => setShowHintNotification(false), 2000);
@@ -182,40 +231,47 @@ const WritingApp = () => {
   };
 
   const useHint = async (index) => {
-      if (!hints[index] || hints[index].isUsed) return;
+    if (!hints[index] || hints[index].isUsed) return;
+    
+    setClickedAssist(index); // Show immediate feedback
+    
+    try {
+      const hint = hints[index];
+      
+      const response = await fetch(`${API_URL}/get-hint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          submission: submission,
+          writingType: writingType,
+          badges: [hint.targetBadge]
+        })
+      });
 
-      try {
-        const hint = hints[index];
-        
-        const response = await fetch(`${API_URL}/get-hint`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            submission: submission,
-            writingType: writingType,
-            badges: [hint.targetBadge]  // Use the stored badge
-          })
-        });
+      const data = await response.json();
+      const newLine = data.hint;
+      
+      setSubmission(prev => {
+        const needsNewline = prev.trim().length > 0 && !prev.endsWith('\n');
+        return `${prev}${needsNewline ? '\n' : ''}${newLine}`;
+      });
+      
+      setHints(prev => prev.map((hint, i) => 
+        i === index ? { ...hint, text: newLine, isUsed: true } : hint
+      ));
 
-        const data = await response.json();
-        const newLine = data.hint;
-        
-        setSubmission(prev => {
-          const needsNewline = prev.trim().length > 0 && !prev.endsWith('\n');
-          return `${prev}${needsNewline ? '\n' : ''}${newLine}`;
-        });
-        
-        setHints(prev => prev.map((hint, i) => 
-          i === index ? { ...hint, text: newLine, isUsed: true } : hint
-        ));
+      // Only dismiss the message after successfully using the assist
+      setShowAssistHint(false);
 
-      } catch (error) {
-        console.error('Failed to get hint:', error);
-        alert('Failed to get hint. Please try again.');
-      }
-    };
+    } catch (error) {
+      console.error('Failed to get hint:', error);
+      alert('Failed to get hint. Please try again.');
+    } finally {
+      setClickedAssist(null); // Reset clicked state after completion
+    }
+  };
 
   const evaluateSubmission = async (text) => {
   try {
@@ -488,31 +544,49 @@ const WritingApp = () => {
   
           <div className="flex items-center justify-between">
             {/* Hints - Smaller on mobile */}
-            <div className="flex gap-2 sm:gap-4">
-              {[...Array(2)].map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => useHint(index)}
-                  className={`
-                    w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-all duration-300
-                    ${hints[index] 
-                      ? hints[index].isUsed
-                        ? 'bg-gray-200 cursor-not-allowed opacity-50'
-                        : 'bg-yellow-100 hover:bg-yellow-200 cursor-pointer'
-                      : 'bg-gray-200 opacity-30 cursor-not-allowed'
-                    }
-                  `}
-                  disabled={!hints[index] || hints[index].isUsed || isEvaluating}
-                >
-                  {isEvaluating ? (
-                    <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
-                  ) : (
-                    '✏️'
-                  )}
-                </button>
-              ))}
+            <div className="relative">
+              {/* Message absolutely positioned above assists */}
+              {showAssistHint && (
+                <div className="
+                  absolute bottom-full mb-2 left-0 right-0
+                  text-sm text-gray-600 
+                  animate-fade-in 
+                  transition-opacity duration-300
+                  text-center
+                ">
+                  Having trouble getting started? Use an assist! ↓
+                </div>
+              )}
+              
+              {/* Assist buttons in fixed position */}
+              <div className="flex gap-2 sm:gap-4">
+                {[...Array(3)].map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => useHint(index)}
+                    className={`
+                      w-10 h-10 sm:w-12 sm:h-12 rounded-lg 
+                      flex items-center justify-center 
+                      transition-all duration-300
+                      ${clickedAssist === index ? 'scale-90 ' : ''}
+                      ${hints[index] 
+                        ? hints[index].isUsed
+                          ? 'bg-gray-200 cursor-not-allowed opacity-50'
+                          : 'bg-yellow-100 hover:bg-yellow-200 cursor-pointer'
+                        : 'bg-gray-200 opacity-30 cursor-not-allowed'
+                      }
+                    `}
+                    disabled={!hints[index] || hints[index].isUsed || isEvaluating}
+                  >
+                    {isEvaluating || clickedAssist === index ? (
+                      <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
+                    ) : (
+                      '✏️'
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-
             {/* Submit Button - Smaller on mobile */}
             <button 
               onClick={handleSubmit}
