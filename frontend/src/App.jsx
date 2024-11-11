@@ -47,9 +47,11 @@ const ExpandableBadgeCriteria = ({ text }) => {
         className={`
           text-sm font-bold text-emerald-500 text-center
           transition-all duration-300 ease-in-out
+          flex items-center justify-center gap-1.5
           ${isExpanded ? 'opacity-0' : 'opacity-100'}
         `}
       >
+        <Award className="h-4 w-4" />
         criteria discovered!
       </div>
       
@@ -454,7 +456,7 @@ const WritingApp = () => {
           {badges.map(badge => (
             <div key={badge.id} className="flex flex-col items-center gap-2 sm:gap-3">
               <div className="relative">
-                {/* Base circle - Smaller on mobile */}
+                {/* Base circle */}
                 <div 
                   className={`
                     w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 flex items-center justify-center bg-white
@@ -470,8 +472,8 @@ const WritingApp = () => {
                   )}
                 </div>
 
-                {/* Half-earned overlay */}
-                {badge.earned === 1 && (
+                {/* Half-earned overlay & hover text */}
+                {badge.earned === 1 ? (
                   <>
                     <div 
                       className="absolute inset-0 overflow-hidden"
@@ -482,7 +484,6 @@ const WritingApp = () => {
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500 opacity-75" />
                     </div>
                     
-                    {/* Hover text - Adjusted positioning */}
                     <div className="absolute inset-0 group">
                       <div className="
                         invisible group-hover:visible
@@ -497,6 +498,21 @@ const WritingApp = () => {
                       </div>
                     </div>
                   </>
+                ) : !badge.earned && !discoveredCriteria.has(badge.id) && (
+                  // New hover text for unearned badges
+                  <div className="absolute inset-0 group">
+                    <div className="
+                      invisible group-hover:visible
+                      absolute left-1/2 -translate-x-1/2 -bottom-12 sm:-bottom-16
+                      bg-black text-white text-xs sm:text-sm rounded-lg py-1 sm:py-2 px-2 sm:px-3
+                      whitespace-nowrap
+                      opacity-0 group-hover:opacity-100
+                      transition-opacity duration-200
+                      max-w-[200px] sm:max-w-none text-center z-1000
+                    ">
+                      Write something and submit it to try to figure out what this badge is about!
+                    </div>
+                  </div>
                 )}
               </div>
 
