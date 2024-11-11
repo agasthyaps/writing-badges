@@ -286,11 +286,12 @@ const WritingApp = () => {
       setIsCelebrating(true);
       setNoBadgeAttempts(0);
       setIsFeedbackVisible(false);
-      setIsRequestingHint(false);  // Reset hint loader
+      setIsRequestingHint(false);
     } else {
       // Show feedback if provided and we haven't won
-      if (response.final_feedback) {
-        setFeedback(response.final_feedback);
+      const data = await evaluateSubmission(submission);
+      if (data.final_feedback) {
+        setFeedback(data.final_feedback);
         setIsFeedbackVisible(true);
       }
 
@@ -326,8 +327,8 @@ const WritingApp = () => {
     }
     
     setIsEvaluating(false);
-    setIsRequestingHint(false);  // Reset hint loader just in case
-};
+    setIsRequestingHint(false);  // Reset hint loader
+  };
 
   return (
     <div className="fixed inset-0 bg-white text-black [color-scheme:light]">
