@@ -28,17 +28,12 @@ WRITING_TYPES = [
     {
         "id": "poem",
         "prompt": "write a poem.",
-        "description": "Use vivid imagery and careful word choice to express yourself through poetry."
+        "description": "Use imagery and word choice to express yourself through poetry."
     },
     {
         "id": "story",
         "prompt": "tell a story.",
-        "description": "Create a narrative with characters, conflict, and resolution."
-    },
-    {
-        "id": "argument",
-        "prompt": "make an argument.",
-        "description": "Present a clear position and support it with compelling reasons."
+        "description": "Create a short narrative with characters, conflict, and resolution."
     },
     {
         "id": "description",
