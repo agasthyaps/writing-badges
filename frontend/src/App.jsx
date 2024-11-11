@@ -163,7 +163,15 @@ const WritingApp = () => {
     
     setIsRequestingHint(true);
     try {
-      setHints(prev => [...prev, { text: '', isUsed: false }]);
+      // Get an unearned badge at the time the hint is created
+      const unearnedBadges = badges.filter(badge => !badge.earned);
+      const randomBadge = unearnedBadges[Math.floor(Math.random() * unearnedBadges.length)];
+      
+      setHints(prev => [...prev, { 
+        text: '', 
+        isUsed: false,
+        targetBadge: randomBadge  // Store the badge this hint is for
+      }]);
       setShowHintNotification(true);
       setTimeout(() => setShowHintNotification(false), 2000);
     } catch (error) {
@@ -173,47 +181,41 @@ const WritingApp = () => {
     }
   };
 
-  const handlePlayAgain = () => {
-    window.location.reload();
-  };
-
   const useHint = async (index) => {
-    if (!hints[index] || hints[index].isUsed) return;
+      if (!hints[index] || hints[index].isUsed) return;
 
-    try {
-      const unearnedBadges = badges.filter(badge => !badge.earned);
-      const randomBadge = unearnedBadges[Math.floor(Math.random() * unearnedBadges.length)];
-      
-      const response = await fetch(`${API_URL}/get-hint`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          submission: submission,
-          writingType: writingType,
-          badges: [randomBadge]
-        })
-      });
+      try {
+        const hint = hints[index];
+        
+        const response = await fetch(`${API_URL}/get-hint`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            submission: submission,
+            writingType: writingType,
+            badges: [hint.targetBadge]  // Use the stored badge
+          })
+        });
 
-      const data = await response.json();
-      const newLine = data.hint;
-      
-      // Simply append the hint to the submission
-      setSubmission(prev => {
-        const needsNewline = prev.trim().length > 0 && !prev.endsWith('\n');
-        return `${prev}${needsNewline ? '\n' : ''}${newLine}`;
-      });
-      
-      setHints(prev => prev.map((hint, i) => 
-        i === index ? { ...hint, text: newLine, isUsed: true } : hint
-      ));
+        const data = await response.json();
+        const newLine = data.hint;
+        
+        setSubmission(prev => {
+          const needsNewline = prev.trim().length > 0 && !prev.endsWith('\n');
+          return `${prev}${needsNewline ? '\n' : ''}${newLine}`;
+        });
+        
+        setHints(prev => prev.map((hint, i) => 
+          i === index ? { ...hint, text: newLine, isUsed: true } : hint
+        ));
 
-    } catch (error) {
-      console.error('Failed to get hint:', error);
-      alert('Failed to get hint. Please try again.');
-    }
-  };
+      } catch (error) {
+        console.error('Failed to get hint:', error);
+        alert('Failed to get hint. Please try again.');
+      }
+    };
 
   const evaluateSubmission = async (text) => {
   try {
@@ -263,7 +265,6 @@ const WritingApp = () => {
     setAttemptCount(prev => prev + 1);
     
     const evaluatedBadges = await evaluateSubmission(submission);
-    const response = await evaluateSubmission(submission);
 
     // Check for newly earned badges to handle animation regardless of win condition
     const previouslyEarned = new Set(badges.map(b => b.earned === 2 ? b.id : null));
