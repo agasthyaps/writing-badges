@@ -1,6 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Award, ArrowRight, Loader2, RefreshCw, X } from 'lucide-react';
 
+const FeedbackPanel = ({ feedback, isVisible, onDismiss }) => {
+  if (!feedback) return null;
+
+  return (
+    <div className={`
+      fixed left-1/2 bottom-8 transform -translate-x-1/2
+      transition-all duration-500 ease-in-out
+      z-40 w-full max-w-xl px-4
+      ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0 pointer-events-none'}
+    `}>
+      <div className="
+        bg-white rounded-xl shadow-xl
+        border border-gray-200
+        p-4 sm:p-6
+      ">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 text-base sm:text-lg text-gray-700 leading-relaxed">
+            {feedback}
+          </div>
+          
+          <button 
+            onClick={onDismiss}
+            className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Dismiss feedback"
+          >
+            <X className="h-4 w-4 text-gray-500" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ExpandableBadgeCriteria = ({ text }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -58,6 +91,8 @@ const WritingApp = () => {
   const [showClueToast, setShowClueToast] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
   const [discoveredCriteria, setDiscoveredCriteria] = useState(new Set());
+  const [feedback, setFeedback] = useState('');
+  const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -200,6 +235,11 @@ const WritingApp = () => {
     });
 
     const data = await response.json();
+
+    if (data.final_feedback) {
+      setFeedback(data.final_feedback);
+      setIsFeedbackVisible(true);
+    }
     
     // Map our existing badges to include the new scores
     return badges.map((badge, index) => ({
@@ -223,8 +263,9 @@ const WritingApp = () => {
     setAttemptCount(prev => prev + 1);
     
     const evaluatedBadges = await evaluateSubmission(submission);
+    const response = await evaluateSubmission(submission);
 
-    // Check for newly fully-earned badges (score of 2) for discovered criteria
+    // Check for newly earned badges to handle animation regardless of win condition
     const previouslyEarned = new Set(badges.map(b => b.earned === 2 ? b.id : null));
     const newlyEarned = evaluatedBadges.filter(badge => 
       badge.earned === 2 && !previouslyEarned.has(badge.id)
@@ -232,51 +273,60 @@ const WritingApp = () => {
 
     // Animate all badges that were earned in this submission
     evaluatedBadges.filter(badge => badge.earned === 2)
-    .forEach(badge => handleBadgeEarned(badge.id));
-    
-    if (newlyEarned.length > 0) {
-      setDiscoveredCriteria(prev => {
-        const newSet = new Set(prev);
-        newlyEarned.forEach(badge => newSet.add(badge.id));
-        return newSet;
-      });
-      if (hints.length < 2) {
-        requestHint();
-      }
-    }
-    
+      .forEach(badge => handleBadgeEarned(badge.id));
+
+    // Set the updated badges state
     setBadges(evaluatedBadges);
-    
-    // Update winning condition to check for all badges being fully earned (2)
-    if (evaluatedBadges.every(badge => badge.earned === 2)) {
+
+    // Check if all badges are fully earned (2)
+    const allBadgesEarned = evaluatedBadges.every(badge => badge.earned === 2);
+
+    if (allBadgesEarned) {
       setIsCelebrating(true);
       setNoBadgeAttempts(0);
-    } else if (newlyEarned.length === 0) {
-      // Increment counter when no new badges earned
-      const newAttemptCount = noBadgeAttempts + 1;
-      setNoBadgeAttempts(newAttemptCount);
-      
-      if (newAttemptCount >= 3) {
-        // Get random unearned badge clue
-        const unearnedBadges = evaluatedBadges.filter(badge => !badge.earned);
-        if (unearnedBadges.length > 0) {
-          const randomBadge = unearnedBadges[Math.floor(Math.random() * unearnedBadges.length)];
-          setShowClueToast(true);
-          setTimeout(() => setShowClueToast(false), 5000); // Show for 5 seconds
-        }
-        setNoBadgeAttempts(0); // Reset counter after showing clue
-      } else {
-        // Show regular "keep going" toast
-        setShowNoBadgesToast(true);
-        setTimeout(() => setShowNoBadgesToast(false), 3000);
-      }
+      setIsFeedbackVisible(false);
+      setIsRequestingHint(false);  // Reset hint loader
     } else {
-      // Reset counter if any new badges earned
-      setNoBadgeAttempts(0);
+      // Show feedback if provided and we haven't won
+      if (response.final_feedback) {
+        setFeedback(response.final_feedback);
+        setIsFeedbackVisible(true);
+      }
+
+      // Handle newly discovered criteria and hints
+      if (newlyEarned.length > 0) {
+        setDiscoveredCriteria(prev => {
+          const newSet = new Set(prev);
+          newlyEarned.forEach(badge => newSet.add(badge.id));
+          return newSet;
+        });
+        if (hints.length < 2) {
+          requestHint();
+        }
+      } else {
+        // Handle no new badges earned
+        const newAttemptCount = noBadgeAttempts + 1;
+        setNoBadgeAttempts(newAttemptCount);
+        
+        if (newAttemptCount >= 3) {
+          // Show clue for random unearned badge
+          const unearnedBadges = evaluatedBadges.filter(badge => !badge.earned);
+          if (unearnedBadges.length > 0) {
+            const randomBadge = unearnedBadges[Math.floor(Math.random() * unearnedBadges.length)];
+            setShowClueToast(true);
+            setTimeout(() => setShowClueToast(false), 5000);
+          }
+          setNoBadgeAttempts(0);
+        } else {
+          setShowNoBadgesToast(true);
+          setTimeout(() => setShowNoBadgesToast(false), 3000);
+        }
+      }
     }
     
     setIsEvaluating(false);
-  };
+    setIsRequestingHint(false);  // Reset hint loader just in case
+};
 
   return (
     <div className="fixed inset-0 bg-white text-black [color-scheme:light]">
@@ -428,7 +478,7 @@ const WritingApp = () => {
               }
             `}
           >
-            New hint unlocked! 🎉
+            New assist unlocked! 🎉
           </div>
   
           <div className="flex items-center justify-between">
@@ -452,7 +502,7 @@ const WritingApp = () => {
                   {isEvaluating ? (
                     <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
                   ) : (
-                    '💡'
+                    '✨✏️✨'
                   )}
                 </button>
               ))}
@@ -493,27 +543,9 @@ const WritingApp = () => {
         </span>
       </div>
 
-      {/* Keep trying toast */}
-      <div
-        className={`
-          fixed bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2
-          bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full
-          transition-all duration-300 ease-in-out
-          flex items-center gap-2 max-w-[90%] sm:max-w-none
-          ${showNoBadgesToast && !showClueToast
-            ? 'opacity-100 translate-y-0' 
-            : 'opacity-0 translate-y-4 pointer-events-none'
-          }
-        `}
-      >
-        <span className="text-sm sm:text-base">
-          Keep going! Try adding more detail or creativity to earn badges.
-        </span>
-      </div>
-
       {/* Celebration Modal - Added mobile padding */}
       {isCelebrating && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4 z-100">
           <div className="bg-white p-6 sm:p-8 rounded-lg text-center max-w-md w-full mx-4">
             <h2 className="text-xl sm:text-2xl font-bold text-black mb-4 sm:mb-6">Congratulations!</h2>
             
@@ -550,7 +582,13 @@ const WritingApp = () => {
             </div>
           </div>
         </div>
-      )}
+      )} 
+      {/* Feedback Panel */}
+      <FeedbackPanel 
+        feedback={feedback}
+        isVisible={isFeedbackVisible}
+        onDismiss={() => setIsFeedbackVisible(false)}
+      />
     </div>
   );
 };

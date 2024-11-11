@@ -11,6 +11,8 @@ PROMPT_LIBRARY = {
     We want to reward creativity and effort, so be generous but reasonable in your evaluations.
     Note that submissions may be intentionally incomplete - the writer may be trying to see whether a sentence they just wrote meets the criteria, for example.
     So your evaluation should be based on the submission as it stands.
+    Finally, you will create a three sentence fun feedback response that is both personalized to the submission and slightly cryptic: you want to nudge the writer towards the criteria without giving them away.
+    This final feedback should be short, fun, and give some sort of clear hint or direction to the writer. we're trying to balance fun and frustration here.
 
     """+
     """
@@ -31,7 +33,8 @@ PROMPT_LIBRARY = {
         {{
             "reasoning": "reasoning",
             "earned": 0, 1, or 2,
-        }}
+        }},
+        "final_feedback": "feedback"
     }}
    """,
    "badger":
