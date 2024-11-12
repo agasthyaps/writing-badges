@@ -42,7 +42,7 @@ WRITING_TYPES = [
     },
 ]
 
-evaluator = Agent('gpt', PROMPT_LIBRARY['evaluator'], json_mode=True)
+evaluator = Agent('gpt', PROMPT_LIBRARY['evaluator'], history=True, json_mode=True)
 badge_creator = Agent('4o', PROMPT_LIBRARY['badger'], json_mode=True)
 hint_generator = Agent('haiku', PROMPT_LIBRARY['hinter'])
 

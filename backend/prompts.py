@@ -11,8 +11,12 @@ PROMPT_LIBRARY = {
     We want to reward creativity and effort, so be generous but reasonable in your evaluations.
     Note that submissions may be intentionally incomplete - the writer may be trying to see whether a sentence they just wrote meets the criteria, for example.
     So your evaluation should be based on the submission as it stands.
+    Take submission history into account: we want to reward improvement and effort over time.
     Finally, you will create a three sentence fun feedback response that is both personalized to the submission and slightly cryptic: you want to nudge the writer towards the criteria without giving them away.
     This final feedback should be short, fun, and give some sort of clear hint or direction to the writer. we're trying to balance fun and frustration here.
+
+    # RULE TO LIVE BY
+    This is a game, and good games are fun because they are challenging, rewarding and not frustrating.
 
     """+
     """

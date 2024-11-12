@@ -98,6 +98,8 @@ const WritingApp = () => {
   const [showAssistHint, setShowAssistHint] = useState(false);
   const [clickedAssist, setClickedAssist] = useState(null);
   const inactivityTimerRef = useRef(null);
+  const [pendingAssistCount, setPendingAssistCount] = useState(0);  // Track newly earned assists
+
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -211,7 +213,7 @@ const WritingApp = () => {
   };
 
   const requestHint = async () => {
-    if (hints.length >= 3 || isRequestingHint) return; // Updated to allow max 3 hints (1 initial + 2 earned)
+    if (hints.length >= 3 || isRequestingHint) return;
     
     setIsRequestingHint(true);
     try {
@@ -223,8 +225,7 @@ const WritingApp = () => {
         isUsed: false,
         targetBadge: randomBadge
       }]);
-      setShowHintNotification(true);
-      setTimeout(() => setShowHintNotification(false), 2000);
+      // Note: We no longer set showHintNotification here
     } catch (error) {
       console.error('Failed to get hint:', error);
     } finally {
@@ -235,7 +236,7 @@ const WritingApp = () => {
   const useHint = async (index) => {
     if (!hints[index] || hints[index].isUsed) return;
     
-    setClickedAssist(index); // Show immediate feedback
+    setClickedAssist(index);
     
     try {
       const hint = hints[index];
@@ -248,7 +249,13 @@ const WritingApp = () => {
         body: JSON.stringify({
           submission: submission,
           writingType: writingType,
-          badges: [hint.targetBadge]
+          badges: [
+            {
+              id: hint.targetBadge.id,
+              name: hint.targetBadge.name,
+              criteria: hint.targetBadge.criteria
+            }
+          ]
         })
       });
 
@@ -264,14 +271,13 @@ const WritingApp = () => {
         i === index ? { ...hint, text: newLine, isUsed: true } : hint
       ));
 
-      // Only dismiss the message after successfully using the assist
       setShowAssistHint(false);
 
     } catch (error) {
       console.error('Failed to get hint:', error);
       alert('Failed to get hint. Please try again.');
     } finally {
-      setClickedAssist(null); // Reset clicked state after completion
+      setClickedAssist(null);
     }
   };
 
@@ -325,51 +331,49 @@ const WritingApp = () => {
     try {
       const evaluationResult = await evaluateSubmission(submission);
       
-      // Check for newly earned badges to handle animation regardless of win condition
       const previouslyEarned = new Set(badges.map(b => b.earned === 2 ? b.id : null));
       const newlyEarned = evaluationResult.filter(badge => 
         badge.earned === 2 && !previouslyEarned.has(badge.id)
       );
 
-      // Animate all badges that were earned in this submission
       evaluationResult.filter(badge => badge.earned === 2)
         .forEach(badge => handleBadgeEarned(badge.id));
 
-      // Set the updated badges state
       setBadges(evaluationResult);
 
-      // Check if all badges are fully earned (2)
       const allBadgesEarned = evaluationResult.every(badge => badge.earned === 2);
 
       if (allBadgesEarned) {
         setIsCelebrating(true);
         setNoBadgeAttempts(0);
         setIsFeedbackVisible(false);
-        setIsRequestingHint(false);
       } else {
-        // Show feedback if provided and we haven't won
         if (evaluationResult.final_feedback) {
           setFeedback(evaluationResult.final_feedback);
           setIsFeedbackVisible(true);
         }
 
-        // Handle newly discovered criteria and hints
         if (newlyEarned.length > 0) {
+          // Update discovered criteria
           setDiscoveredCriteria(prev => {
             const newSet = new Set(prev);
             newlyEarned.forEach(badge => newSet.add(badge.id));
             return newSet;
           });
-          if (hints.length < 2) {
-            requestHint();
+          
+          const newAssists = Math.min(3 - hints.length, newlyEarned.length);
+          if (newAssists > 0) {
+            setPendingAssistCount(newAssists);
+            // Request the hints but don't show notification yet
+            for (let i = 0; i < newAssists; i++) {
+              await requestHint();
+            }
           }
         } else {
-          // Handle no new badges earned
           const newAttemptCount = noBadgeAttempts + 1;
           setNoBadgeAttempts(newAttemptCount);
           
           if (newAttemptCount >= 3) {
-            // Show clue for random unearned badge
             const unearnedBadges = evaluationResult.filter(badge => !badge.earned);
             if (unearnedBadges.length > 0) {
               const randomBadge = unearnedBadges[Math.floor(Math.random() * unearnedBadges.length)];
@@ -387,7 +391,19 @@ const WritingApp = () => {
       console.error('Error during submission:', error);
     } finally {
       setIsEvaluating(false);
-      setIsRequestingHint(false);  // Reset hint loader
+    }
+  };
+
+  const handleFeedbackDismiss = () => {
+    setIsFeedbackVisible(false);
+    
+    // Show notification about new assists after feedback is dismissed
+    if (pendingAssistCount > 0) {
+      setShowHintNotification(true);
+      setTimeout(() => {
+        setShowHintNotification(false);
+        setPendingAssistCount(0);
+      }, 2000);
     }
   };
 
@@ -544,18 +560,16 @@ const WritingApp = () => {
         {/* Footer Area - Adjusted for mobile */}
         <div className="relative h-16 sm:h-20">
           {/* Notification Toast */}
-          <div
-            className={`
-              absolute -top-12 left-1/2 -translate-x-1/2
-              bg-black text-white px-3 sm:px-4 py-1 sm:py-2 rounded-lg
-              transition-all duration-300 ease-in-out text-sm sm:text-base
-              ${showHintNotification 
-                ? 'opacity-100 transform translate-y-0' 
-                : 'opacity-0 transform translate-y-4 pointer-events-none'
-              }
-            `}
-          >
-            ✏️ New assist unlocked! ✏️
+          <div className={`
+            absolute -top-12 left-1/2 -translate-x-1/2
+            bg-black text-white px-3 sm:px-4 py-1 sm:py-2 rounded-lg
+            transition-all duration-300 ease-in-out text-sm sm:text-base
+            ${showHintNotification 
+              ? 'opacity-100 transform translate-y-0' 
+              : 'opacity-0 transform translate-y-4 pointer-events-none'
+            }
+          `}>
+            ✏️ {pendingAssistCount} new {pendingAssistCount === 1 ? 'assist' : 'assists'} unlocked! ✏️
           </div>
   
           <div className="flex items-center justify-between">
@@ -682,7 +696,7 @@ const WritingApp = () => {
       <FeedbackPanel 
         feedback={feedback}
         isVisible={isFeedbackVisible}
-        onDismiss={() => setIsFeedbackVisible(false)}
+        onDismiss={handleFeedbackDismiss}
       />
     </div>
   );
