@@ -33,7 +33,7 @@ WRITING_TYPES = [
     {
         "id": "story",
         "prompt": "tell a story.",
-        "description": "Create a short narrative with characters, conflict, and resolution."
+        "description": "Create a short narrative, fiction or non-fiction."
     },
     {
         "id": "description",
@@ -42,8 +42,8 @@ WRITING_TYPES = [
     },
 ]
 
-evaluator = Agent('gpt', PROMPT_LIBRARY['evaluator'], history=True, json_mode=True)
-badge_creator = Agent('4o', PROMPT_LIBRARY['badger'], json_mode=True)
+evaluator = Agent('gemini', PROMPT_LIBRARY['evaluator'], history=True, json_mode=True)
+badge_creator = Agent('gemini', PROMPT_LIBRARY['badger'], json_mode=True)
 hint_generator = Agent('haiku', PROMPT_LIBRARY['hinter'])
 
 class SubmissionRequest(BaseModel):

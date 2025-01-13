@@ -65,7 +65,7 @@ def initialize_chain(model_shorthand,system_prompt, history=False, json_mode=Fal
         'llama':'llama3-8b-8192',
         'sonnet':'claude-3-5-sonnet-20241022',
         '4o':'gpt-4o',
-        'gemini': 'gemini-1.5-flash-002',
+        'gemini': 'gemini-2.0-flash-exp',
         'haiku': 'claude-3-5-haiku-20241022'
     }
 
