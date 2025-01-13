@@ -407,6 +407,70 @@ const WritingApp = () => {
     }
   };
 
+  const handlePlayAgain = async () => {
+    // Reset game state
+    setIsLoading(true);
+    setIsCelebrating(false);
+    setSubmission('');
+    setAttemptCount(0);
+    setNoBadgeAttempts(0);
+    setDiscoveredCriteria(new Set());
+    setAnimatingBadges(new Set());
+    setFeedback('');
+    setIsFeedbackVisible(false);
+    setPendingAssistCount(0);
+    setShowHintNotification(false);
+    setShowNoBadgesToast(false);
+    setShowClueToast(false);
+    setShowAssistHint(false);
+    
+    try {
+      // Reset the initialization promise so we get fresh data
+      initializationPromise = null;
+      
+      // Get new writing type
+      const typeResponse = await fetch(`${API_URL}/writing-type`);
+      const typeData = await typeResponse.json();
+      setWritingType(typeData.writingType);
+      
+      // Get new badges
+      const badgesResponse = await fetch(`${API_URL}/generate-badges?writing_type_id=${typeData.writingType.id}`);
+      const badgesData = await badgesResponse.json();
+      setBadges(badgesData.badges.map(badge => ({
+        ...badge,
+        earned: false,
+        hasGrantedHint: false
+      })));
+      
+      // Get initial hint
+      const hintResponse = await fetch(`${API_URL}/get-hint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          submission: '',
+          writingType: typeData.writingType,
+          badges: badgesData.badges
+        })
+      });
+      const hintData = await hintResponse.json();
+      
+      // Reset hints with one initial hint
+      setHints([{ 
+        text: hintData.hint, 
+        isUsed: false,
+        targetBadge: badgesData.badges[Math.floor(Math.random() * badgesData.badges.length)]
+      }]);
+      
+    } catch (error) {
+      console.error('Failed to restart game:', error);
+      alert('Failed to start new game. Please refresh the page.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-white text-black [color-scheme:light]">
       {showInstructions && (
