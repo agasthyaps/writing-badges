@@ -718,7 +718,7 @@ const WritingApp = () => {
 
       {/* Celebration Modal - Added mobile padding */}
       {isCelebrating && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4 z-100">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4 z-5000">
           <div className="bg-white p-6 sm:p-8 rounded-lg text-center max-w-md w-full mx-4">
             <h2 className="text-xl sm:text-2xl font-bold text-black mb-4 sm:mb-6">Congratulations!</h2>
             
