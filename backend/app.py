@@ -44,7 +44,7 @@ WRITING_TYPES = [
 
 evaluator = Agent('gpt', PROMPT_LIBRARY['evaluator'], history=True, json_mode=True)
 badge_creator = Agent('gpt', PROMPT_LIBRARY['badger'], json_mode=True)
-hint_generator = Agent('gpt', PROMPT_LIBRARY['hinter'])
+hint_generator = Agent('4o', PROMPT_LIBRARY['hinter'])
 
 class SubmissionRequest(BaseModel):
     submission: str
