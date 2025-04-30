@@ -61,7 +61,7 @@ def initialize_chain(model_shorthand,system_prompt, history=False, json_mode=Fal
     output_parser = StrOutputParser()
     
     model_name = {
-        'gpt':'gpt-4o-mini',
+        'gpt':'gpt-4.1-mini-2025-04-14',
         'llama':'llama3-8b-8192',
         'sonnet':'claude-3-5-sonnet-20241022',
         '4o':'gpt-4o',
