@@ -13,7 +13,7 @@ PROMPT_LIBRARY = {
     So your evaluation should be based on the submission as it stands.
     Take submission history into account: we want to reward improvement and effort over time.
     Finally, you will create a three sentence fun feedback response that is both personalized to the submission and slightly cryptic: you want to nudge the writer towards the criteria without giving them away.
-    This final feedback should be short, fun, and give some sort of clear hint or direction to the writer. we're trying to balance fun and frustration here.
+    This final feedback should be short, fun, and give some sort of clear hint or direction to the writer. we're trying to balance fun and frustration here. Don't be overly corny or heavy-handed.
 
     # RULE TO LIVE BY
     This is a game, and good games are fun because they are challenging, rewarding and not frustrating.
@@ -99,12 +99,13 @@ PROMPT_LIBRARY = {
             "clue": "clue"
         }}
     }}
+    DO NOT INCLUDE ANY PREAMBLE LIKE ```json or ```
    """,
    "hinter":
    """
    # OVERVIEW
    you are given a piece of writing and a vauge set of unmet criteria. add a line to the writing that might help the piece meet the criteria.
-   only one line is needed, and it should be a single sentence or phrase that fits into the existing writing. Don't mention the criteria, or badges, or the game
+   only one line is needed, and it should be a single sentence or phrase that fits into the existing writing. Don't mention the criteria or badges in any way.
    only output the new line, not the entire piece with the new line added. do not include any preamble. consider this a collaborative writing exercise that requires you to fully integrate your line into the existing piece.
    even if the piece of writing you recieve is blank, only generate a single line to add to the piece.
    """

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import List
 import random
 from prompts import PROMPT_LIBRARY
-from llm_utils import Agent
+from llm_utils import Agent, remove_preamble
 import uvicorn
 import json
 import os
@@ -51,9 +51,9 @@ WRITING_TYPES = [
     },
 ]
 
-evaluator = Agent('gpt', PROMPT_LIBRARY['evaluator'], history=True, json_mode=True)
-badge_creator = Agent('gpt', PROMPT_LIBRARY['badger'], json_mode=True)
-hint_generator = Agent('4o', PROMPT_LIBRARY['hinter'])
+evaluator = Agent('gpt41mini', PROMPT_LIBRARY['evaluator'], history=True, json_mode=True)
+badge_creator = Agent('gemini', PROMPT_LIBRARY['badger'], json_mode=True)
+hint_generator = Agent('gpt41nano', PROMPT_LIBRARY['hinter'])
 
 class SubmissionRequest(BaseModel):
     submission: str
@@ -73,6 +73,8 @@ async def generate_badges(writing_type_id: str):
     prompt = f"""Generate badges for this writing task: {writing_type['prompt']} ({writing_type['description']})"""
     
     response = await badge_creator.respond_to(prompt)
+    if response.startswith("```json"):
+        response = remove_preamble(response)
     response = json.loads(response)
     
     badges = []
@@ -119,7 +121,7 @@ async def get_hint(request: SubmissionRequest):
     Writing Task: {request.writingType['prompt']} ({request.writingType['description']})
     
     Current submission: {request.submission}
-    Unearned badges: {', '.join([badge['name'] for badge in request.badges])}
+    Unmet criteria: {', '.join([badge['name'] for badge in request.badges])}
     """
     response = await hint_generator.respond_to(prompt)
     return JSONResponse(content={"hint": response})
@@ -322,7 +324,7 @@ async def share_image(req: ShareRequest):
 # Quick test endpoint with sample payload
 @app.get("/test-share")
 async def test_share():
-    sample_submission = "Golden dusk leaked through boarded windows, painting dust motes like drifting stars."
+    sample_submission = "Golden dusk leaked through boarded windows\n painting dust motes like drifting stars.\nand the wind whispered\n secrets of the past."
     sample_badges = [
         {"icon": "🌈", "name": "Metaphor"},
         {"icon": "🍊", "name": "Tangerine"},

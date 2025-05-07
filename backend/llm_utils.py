@@ -18,13 +18,14 @@ __all__ = ["Agent"]
 
 # Map shorthand → (provider, model_name)
 _MODEL_REGISTRY: Dict[str, Tuple[str, str]] = {
-    "gpt": ("openai", "gpt-4.1-mini-2025-04-14"),
-    "4o": ("openai", "gpt-4.1-nano"),
+    "gpt41mini": ("openai", "gpt-4.1-mini-2025-04-14"),
+    "gpt41nano": ("openai", "gpt-4.1-nano"),
+    "gpt41": ("openai", "gpt-4.1"),
     # Anthropic models
     "sonnet": ("anthropic", "claude-3-5-sonnet-20241022"),
     "haiku": ("anthropic", "claude-3-5-haiku-20241022"),
     # Google
-    "gemini": ("gemini", "gemini-2.0-flash-exp"),
+    "gemini": ("gemini", "gemini-2.5-flash-preview-04-17"),
 }
 
 # Default generation params per provider
@@ -39,9 +40,13 @@ _DEFAULT_PARAMS = {
     },
     "gemini": {
         "temperature": 0.7,
-        "max_output_tokens": 1024,
+        "max_output_tokens": 2048,
     },
 }
+
+def remove_preamble(text: str) -> str:
+    """remove the preamble "```json\n" from the start of the text" and the closing "```" from the end of the text"""
+    return text.split("```json\n")[1].split("\n```")[0]
 
 
 class Agent:
@@ -155,30 +160,41 @@ class Agent:
 
         client = self._gemini_client
 
-        # Gemini SDK is sync; run in executor
-        async def _run_sync():
-            # Compose the contents list (system instructions handled separately)
-            contents: List[str] = []
-            if self.system_prompt:
-                contents.append(self.system_prompt)
-            if self.keep_history:
-                contents.extend([m["content"] for m in self._history])
-            contents.append(user_input)
+        # Compose the contents list (system instructions handled separately)
+        contents: List[str] = []
+        if self.system_prompt:
+            contents.append(self.system_prompt)
+        if self.keep_history:
+            contents.extend([m["content"] for m in self._history])
+        contents.append(user_input)
 
-            kwargs = _DEFAULT_PARAMS["gemini"].copy()
-            if self.json_mode:
-                kwargs["response_mime_type"] = "application/json"
+        # Create config object with generation parameters
+        config = genai.types.GenerateContentConfig(
+            temperature=_DEFAULT_PARAMS["gemini"]["temperature"],
+            max_output_tokens=_DEFAULT_PARAMS["gemini"]["max_output_tokens"]
+        )
 
-            return client.models.generate_content(
+        try:
+            # Run the sync Gemini API call in a thread pool
+            response = await asyncio.to_thread(
+                client.models.generate_content,
                 model=self._model_name,
                 contents=contents,
-                **kwargs,
+                config=config
             )
 
-        response = await asyncio.to_thread(_run_sync)
-        assistant_content = getattr(response, "text", str(response))
-        self._maybe_store_messages(user_input, assistant_content)
-        return assistant_content
+            # Handle potential errors in response
+            if not response or not hasattr(response, "text"):
+                raise ValueError("Invalid response from Gemini API")
+            
+            response_text = response.text
+            self._maybe_store_messages(user_input, response_text)
+            print(response_text)
+            return response_text
+
+        except Exception as e:
+            print(f"Error in Gemini API call: {str(e)}")
+            raise
 
     # --------------------------------------------------------
     # Helpers
