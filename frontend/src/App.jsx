@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Award, ArrowRight, Loader2, RefreshCw, X } from 'lucide-react';
+import {
+  FacebookShareButton,
+  TwitterShareButton,
+  LinkedinShareButton,
+  RedditShareButton,
+  FacebookIcon,
+  TwitterIcon,
+  LinkedinIcon,
+  RedditIcon,
+} from 'react-share';
 
 const FeedbackPanel = ({ feedback, isVisible, onDismiss }) => {
   if (!feedback) return null;
@@ -99,7 +109,12 @@ const WritingApp = () => {
   const [clickedAssist, setClickedAssist] = useState(null);
   const inactivityTimerRef = useRef(null);
   const [pendingAssistCount, setPendingAssistCount] = useState(0);  // Track newly earned assists
-
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
+  const [shareCardUrl, setShareCardUrl] = useState('');
+  const [hasGeneratedCard, setHasGeneratedCard] = useState(false);
+  const [showCriteriaDetails, setShowCriteriaDetails] = useState(false);
+  const [shareFallback, setShareFallback] = useState('');
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -471,6 +486,107 @@ const WritingApp = () => {
     }
   };
 
+  const handleShare = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+    setShareMessage('');
+    setShareCardUrl('');
+    setHasGeneratedCard(false);
+    setShareFallback('');
+
+    try {
+      const response = await fetch(`${API_URL}/share-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          submission: submission,
+          writingType: writingType,
+          badges: badges.map(b => ({ icon: b.icon, name: b.name})),
+          attempts: attemptCount,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.url) {
+        setShareCardUrl(data.url);
+        setHasGeneratedCard(true);
+      }
+      if (data.fallback) {
+        setShareFallback(data.fallback);
+      }
+
+      if (navigator.share && data.url) {
+        // Fetch the image as a blob to share it as a file
+        const imageResponse = await fetch(data.url);
+        if (!imageResponse.ok) {
+            throw new Error(`Failed to fetch share image: ${imageResponse.status}`);
+        }
+        const blob = await imageResponse.blob();
+        const file = new File([blob], "writing_badges_recap.png", { type: blob.type });
+
+        await navigator.share({
+          title: 'I wrote something!',
+          text: shareFallback || `I earned all badges for "${writingType.prompt}" in ${attemptCount} attempts! Check out my submission. write.actually-useful.xyz`,
+          files: [file],
+        });
+        setShareMessage('Shared successfully!');
+      } else if (data.fallback) {
+        await navigator.clipboard.writeText(data.fallback);
+        setShareMessage('Fallback text copied to clipboard!');
+      } else {
+        setShareMessage('Sharing not available or failed.');
+      }
+    } catch (error) {
+      console.error('Sharing failed:', error);
+      setShareMessage(`Sharing failed: ${error.message}`);
+    } finally {
+      setIsSharing(false);
+      setTimeout(() => setShareMessage(''), 3000);
+    }
+  };
+
+  // Compute absolute URL for the card image
+  const absoluteUrl = shareCardUrl
+    ? shareCardUrl.startsWith('http')
+      ? shareCardUrl
+      : API_URL.replace(/\/$/, '') + shareCardUrl
+    : '';
+
+  // Modified handleDownload to use absoluteUrl
+  const handleDownload = async () => {
+    if (!absoluteUrl) return;
+    try {
+      const response = await fetch(absoluteUrl, { mode: 'cors' });
+      if (!response.ok) throw new Error('Network response was not ok');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'writing_badges_card.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      // Fallback: open in new tab
+      window.open(absoluteUrl, '_blank');
+    }
+  };
+
+  // Modified handleCopyLink to use fallback text
+  const handleCopyLink = async () => {
+    if (!shareFallback) return;
+    await navigator.clipboard.writeText(shareFallback);
+    setShareMessage('Copied to clipboard!');
+    setTimeout(() => setShareMessage(''), 2000);
+  };
+
   return (
     <div className="fixed inset-0 bg-white text-black [color-scheme:light]">
       {showInstructions && (
@@ -718,36 +834,119 @@ const WritingApp = () => {
 
       {/* Celebration Modal - Added mobile padding */}
       {isCelebrating && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4 z-5000">
-          <div className="bg-white p-6 sm:p-8 rounded-lg text-center max-w-md w-full mx-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-black mb-4 sm:mb-6">Congratulations!</h2>
-            
-            <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4">
-              <div className="text-left space-y-2">
-                {badges.map(badge => (
-                  <div key={badge.id} className="flex items-center gap-2">
-                    <span className="text-lg sm:text-xl">{badge.icon}</span>
-                    <span className="text-sm sm:text-base text-black">
-                      <span className="font-medium">{badge.name}:</span> {badge.criteria}
-                    </span>
-                  </div>
-                ))}
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 p-4 z-[9999]">
+          <div className={`bg-white p-6 sm:p-8 rounded-lg text-center w-full mx-4 relative transition-all duration-300 ${hasGeneratedCard ? 'max-w-2xl' : 'max-w-md'}`}>
+            <h2 className="text-xl sm:text-2xl font-bold text-black mb-4 sm:mb-6">Nice work! You Got All the Badges!</h2>
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">That submission got earned all the badges at once! 🎉 Go ahead -- share your work with your friends!</p>
+            {/* Generate Card Button (only if not generated yet) */}
+            {!hasGeneratedCard && (
+              <button
+                onClick={handleShare}
+                disabled={isSharing}
+                className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2 text-base disabled:opacity-50 w-full"
+              >
+                {isSharing ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                Share My Work
+              </button>
+            )}
+            {/* Share Card Preview */}
+            {hasGeneratedCard && absoluteUrl && (
+              <div className="mb-4 flex flex-col items-center">
+                <img src={absoluteUrl} alt="Share Card Preview" className="rounded-lg border border-gray-200 max-w-xs w-full" />
+                <div className="text-xs text-gray-500 mt-1">Right-click to save, or use the buttons below!</div>
               </div>
-              <p className="text-gray-600 text-sm sm:text-base">
+            )}
+            {/* Social Share Buttons */}
+            {hasGeneratedCard && absoluteUrl && (
+              <div className="mb-4 flex flex-wrap gap-3 justify-center items-center">
+                <FacebookShareButton url={'https://write.actually-useful.xyz'} quote={shareFallback}>
+                  <FacebookIcon size={40} round />
+                </FacebookShareButton>
+                <TwitterShareButton url={'https://write.actually-useful.xyz'} title={shareFallback}>
+                  <TwitterIcon size={40} round />
+                </TwitterShareButton>
+                <LinkedinShareButton url={'https://write.actually-useful.xyz'} title={shareFallback} summary={shareFallback}>
+                  <LinkedinIcon size={40} round />
+                </LinkedinShareButton>
+              </div>
+            )}
+            {/* Download/Copy Buttons */}
+            {hasGeneratedCard && absoluteUrl && (
+              <div className="mb-4 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center items-center">
+                <button
+                  onClick={handleDownload}
+                  className="flex-1 px-3 sm:px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
+                >
+                  Download Image
+                </button>
+                <button
+                  onClick={handleCopyLink}
+                  className="flex-1 px-3 sm:px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
+                >
+                  Copy to Clipboard
+                </button>
+              </div>
+            )}
+            {/* Badge Criteria Section */}
+            <div className={`mb-4 sm:mb-6 ${hasGeneratedCard ? 'space-y-2' : 'space-y-3 sm:space-y-4'}`}>
+              {hasGeneratedCard ? (
+                <>
+                  <div className="flex flex-wrap justify-center gap-4 mb-2">
+                    {badges.map(badge => (
+                      <div key={badge.id} className="flex flex-col items-center gap-1 min-w-[80px]">
+                        <span className="text-2xl">{badge.icon}</span>
+                        <span className="text-xs font-medium text-black text-center">{badge.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    className="text-xs text-emerald-600 underline mb-2"
+                    onClick={() => setShowCriteriaDetails(v => !v)}
+                  >
+                    {showCriteriaDetails ? 'Hide Details' : 'Show Details'}
+                  </button>
+                  {showCriteriaDetails && (
+                    <div className="text-left space-y-2 max-w-2xl mx-auto">
+                      {badges.map(badge => (
+                        <div key={badge.id} className="flex items-start gap-2">
+                          <span className="text-lg mt-0.5">{badge.icon}</span>
+                          <span className="text-sm text-black">
+                            <span className="font-medium">{badge.name}:</span> {badge.criteria}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-left space-y-2">
+                  {badges.map(badge => (
+                    <div key={badge.id} className="flex items-center gap-2">
+                      <span className="text-lg sm:text-xl">{badge.icon}</span>
+                      <span className="text-sm sm:text-base text-black">
+                        <span className="font-medium">{badge.name}:</span> {badge.criteria}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-gray-600 text-sm sm:text-base mt-2">
                 Completed in {attemptCount} {attemptCount === 1 ? 'attempt' : 'attempts'}
               </p>
             </div>
-
-            <div className="flex gap-2 sm:gap-3">
+            {shareMessage && (
+                <p className="text-sm text-gray-700 mb-3">{shareMessage}</p>
+            )}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2">
               <button
                 onClick={() => setIsCelebrating(false)}
-                className="flex-1 px-3 sm:px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700 text-sm sm:text-base"
+                className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 text-sm sm:text-base"
               >
                 Keep Editing
               </button>
               <button
                 onClick={handlePlayAgain}
-                className="flex-1 px-3 sm:px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-500 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
+                className="flex-1 px-3 sm:px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
               >
                 <RefreshCw className="h-4 w-4" />
                 Play Again

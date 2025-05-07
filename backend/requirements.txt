@@ -1,10 +1,11 @@
 six
 fastapi
-langchain_anthropic
-langchain_community
-langchain_core
-langchain_google_genai
-langchain_groq
-langchain_openai
 pydantic
 uvicorn
+Pillow
+openai
+anthropic
+google
+Pillow
+pilmoji
+emoji==1.7.0

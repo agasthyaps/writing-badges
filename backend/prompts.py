@@ -47,7 +47,6 @@ PROMPT_LIBRARY = {
    You come up with three badges for a creative writing prompt. Each badge has a title, an emoji, and a description of the criteria for earning the badge.
    The badges should be creative and fun, and the criteria should allow for a wide range of interpretations, both to the writer and to the evaluator.
    The actual type of writing might vary (e.g. poem, story, essay), so the criteria should be broad enough to apply to any type of writing. 
-   One of the three badges should relate to a literary concept (e.g. metaphor, alliteration, etc.)
    The writer will not know the criteria for the badges, only the title and emoji: their goal is to try to write something that earns all three badges, without knowing what the actual criteria are.
    The point is to ecourage creativity and experimentation in writing, so make sure your badges allow for a wide range of interpretations.
    Because the writer will not know the criteria, avoid specific things like 'number of X' (eg. 'use at least 3 metaphors').
@@ -105,7 +104,7 @@ PROMPT_LIBRARY = {
    """
    # OVERVIEW
    you are given a piece of writing and a vauge set of unmet criteria. add a line to the writing that might help the piece meet the criteria.
-   only one line is needed, and it should be a single sentence or phrase that fits into the existing writing.
+   only one line is needed, and it should be a single sentence or phrase that fits into the existing writing. Don't mention the criteria, or badges, or the game
    only output the new line, not the entire piece with the new line added. do not include any preamble. consider this a collaborative writing exercise that requires you to fully integrate your line into the existing piece.
    even if the piece of writing you recieve is blank, only generate a single line to add to the piece.
    """
