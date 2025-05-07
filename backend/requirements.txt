@@ -5,7 +5,7 @@ uvicorn
 Pillow
 openai
 anthropic
-google-generativeai
+google-genai
 Pillow
 pilmoji
 emoji==1.7.0
