@@ -231,9 +231,14 @@ def _create_share_card(submission: str, badges: List[dict], writing_type: dict, 
         pilmoji.text((title_x_position, title_y_position), title_text, fill=DARK_TEXT_COLOR, font=title_font)
 
     # 5. Prepare Submission Text (centered horizontally and vertically)
-    submission_wrapped = textwrap.wrap(submission, width=30)
+    # Split by newlines first, then wrap each line
+    submission_lines = submission.split('\n')
+    wrapped_lines = []
+    for line in submission_lines:
+        wrapped_lines.extend(textwrap.wrap(line, width=30))
+    
     submission_line_height = submission_font.getbbox("A")[3] - submission_font.getbbox("A")[1] + 10
-    total_submission_height = len(submission_wrapped) * submission_line_height
+    total_submission_height = len(wrapped_lines) * submission_line_height
     attempts_text = f"" # remove for now
     attempts_text_height = attempts_font.getbbox(attempts_text)[3] - attempts_font.getbbox(attempts_text)[1]
     gap_submission_attempts = 30
@@ -243,7 +248,7 @@ def _create_share_card(submission: str, badges: List[dict], writing_type: dict, 
     current_y = start_y_text_block
     # Draw submission lines with Pilmoji
     with Pilmoji(base) as pilmoji:
-        for line in submission_wrapped:
+        for line in wrapped_lines:
             line_bbox = pilmoji.getsize(line, font=submission_font)
             line_width = line_bbox[0]
             start_x_line = int((WIDTH - line_width) / 2)
