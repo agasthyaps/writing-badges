@@ -963,14 +963,14 @@ const WritingApp = () => {
       />
       
       {/* Footer */}
-      <footer className="mt-8 mb-4 text-center">
-        <p className="text-xs text-gray-400">
+      <footer className="fixed bottom-2 left-0 right-0 text-center pointer-events-none">
+        <p className="text-xs text-gray-600 pointer-events-auto inline-block">
           made by{' '}
           <a 
             href="https://www.teachinglabstudio.com/team/agasthya-shenoy" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-gray-700 underline"
+            className="text-gray-700 hover:text-gray-900 underline"
           >
             aps
           </a>
@@ -979,7 +979,7 @@ const WritingApp = () => {
             href="https://teachinglabstudio.com" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-gray-500 hover:text-gray-700 underline"
+            className="text-gray-700 hover:text-gray-900 underline"
           >
             tls
           </a>
