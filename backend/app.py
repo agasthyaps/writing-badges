@@ -26,7 +26,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://write.actually-useful.xyz"
+        "https://write.actually-useful.xyz",
+        "https://writing-badges.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
