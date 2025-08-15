@@ -25,7 +25,7 @@ _MODEL_REGISTRY: Dict[str, Tuple[str, str]] = {
     "sonnet": ("anthropic", "claude-3-5-sonnet-20241022"),
     "haiku": ("anthropic", "claude-3-5-haiku-20241022"),
     # Google
-    "gemini": ("gemini", "gemini-2.5-flash-preview-04-17"),
+    "gemini": ("gemini", "gemini-2.5-flash"),
 }
 
 # Default generation params per provider
@@ -154,8 +154,9 @@ class Agent:
                 os.getenv("GEMINI_API_KEY")
                 or os.getenv("GOOGLE_API_KEY")
                 or os.getenv("GOOGLE_GENAI_API_KEY")
-                or ""
             )
+            if not api_key:
+                raise ValueError("Google GenAI API key not found. Please set GEMINI_API_KEY, GOOGLE_API_KEY, or GOOGLE_GENAI_API_KEY environment variable.")
             self._gemini_client = genai.Client(api_key=api_key)
 
         client = self._gemini_client
