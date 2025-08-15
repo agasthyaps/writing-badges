@@ -961,6 +961,30 @@ const WritingApp = () => {
         isVisible={isFeedbackVisible}
         onDismiss={handleFeedbackDismiss}
       />
+      
+      {/* Footer */}
+      <footer className="mt-8 mb-4 text-center">
+        <p className="text-xs text-gray-400">
+          made by{' '}
+          <a 
+            href="https://www.teachinglabstudio.com/team/agasthya-shenoy" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-gray-500 hover:text-gray-700 underline"
+          >
+            aps
+          </a>
+          {' '}@{' '}
+          <a 
+            href="https://teachinglabstudio.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-gray-500 hover:text-gray-700 underline"
+          >
+            tls
+          </a>
+        </p>
+      </footer>
     </div>
   );
 };
